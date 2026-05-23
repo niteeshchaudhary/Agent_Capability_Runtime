@@ -1,0 +1,15 @@
+{
+  "name": "@acr/examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "tsx e2e-local.ts"
+  },
+  "dependencies": {
+    "@acr/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

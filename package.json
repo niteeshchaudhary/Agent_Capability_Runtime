@@ -1,0 +1,18 @@
+{
+  "name": "agent-capability-runtime",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Runtime-native authorization and governance layer for AI agents",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "example:token": "pnpm --filter @acr/capability-token run example",
+    "example:e2e": "pnpm --filter @acr/examples run e2e",
+    "dev:gateway": "pnpm --filter @acr/gateway run dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

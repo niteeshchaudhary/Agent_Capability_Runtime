@@ -1,0 +1,27 @@
+{
+  "name": "@acr/policy-engine",
+  "version": "0.1.0",
+  "description": "Constraint evaluation and runtime decisions for Agent Capability Runtime",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@acr/capability-token": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}
