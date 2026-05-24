@@ -9,14 +9,16 @@ Packages are **`0.1.0`** and published from this monorepo via the workspace. The
 
 ### npm registry
 
+Pre-publish check (2026): `npm view @acr/sdk` → **404** (names available). Claim org `@acr` before publish — [naming-and-branding.md](./naming-and-branding.md).
+
 | Package | npm | Notes |
 |---------|-----|-------|
-| `@acr/capability-token` | Planned / verify before launch | Run `pnpm publish:packages` from root |
-| `@acr/policy-engine` | Planned | |
-| `@acr/runtime` | Planned | |
-| `@acr/adapters` | Planned | |
-| `@acr/audit` | Planned | |
-| `@acr/sdk` | Planned | Primary developer entry |
+| `@acr/capability-token` | Not published yet | Run `pnpm publish:packages` from root |
+| `@acr/policy-engine` | Not published yet | |
+| `@acr/runtime` | Not published yet | |
+| `@acr/adapters` | Not published yet | |
+| `@acr/audit` | Not published yet | |
+| `@acr/sdk` | Not published yet | Primary developer entry |
 
 **Before v1.0.0:** Packages may not yet appear on npm under `@acr/*`. If `npm view @acr/sdk` fails, install from source:
 

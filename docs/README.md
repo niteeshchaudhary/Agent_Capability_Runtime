@@ -19,12 +19,18 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 
 | Doc | Description |
 |-----|-------------|
+| [Overview](./overview.md) | Extended README (architecture, perf, monorepo) |
+| [Comparison](./comparison.md) | OAuth vs API gateway vs ACR table |
+| [Who is this NOT for](./who-is-this-not-for.md) | When to skip ACR |
 | [Use cases](./use-cases.md) | Who should adopt ACR today |
 | [Why not OAuth](./why-not-oauth.md) | vs scopes, RBAC, gateways, MCP |
 | [Threat stories](./threat-stories.md) | Narrative security examples |
 | [Threat examples](./threat-examples.md) | Scenario table |
 | [Benchmarks](./benchmarks.md) | `pnpm benchmark` results |
 | [Hosted demo](./hosted-demo.md) | Deploy a public playground |
+| [Recording demo](./recording-demo.md) | GIF / asciinema for README |
+| [Naming & branding](./naming-and-branding.md) | npm, Docker, domains |
+| [Security verification](./security-verification.md) | Pre-launch checklist |
 | [Publishing](./publishing.md) | npm package status |
 
 ## Getting started

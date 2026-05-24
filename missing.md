@@ -91,6 +91,15 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 | Hosted demo guide | **Done** | [docs/hosted-demo.md](./docs/hosted-demo.md) |
 | Launch checklist | **Done** | [LAUNCH.md](./LAUNCH.md) |
 | Public playground URL | *Manual* | Deploy gateway per hosted-demo.md |
+| README badges | **Done** | CI, MIT, TS, Node, RFC, PRs welcome |
+| README threat stories | **Done** | Front-page attack scenarios |
+| Comparison table | **Done** | [docs/comparison.md](./docs/comparison.md) |
+| Who NOT for | **Done** | [docs/who-is-this-not-for.md](./docs/who-is-this-not-for.md) |
+| Roadmap | **Done** | [ROADMAP.md](./ROADMAP.md) |
+| README length | **Done** | ~180 lines; [docs/overview.md](./docs/overview.md) |
+| Security verification | **Done** | [docs/security-verification.md](./docs/security-verification.md) |
+| Naming / npm check | **Done** | [docs/naming-and-branding.md](./docs/naming-and-branding.md) |
+| Demo GIF / asciinema | *Manual* | [docs/recording-demo.md](./docs/recording-demo.md) |
 
 ---
 

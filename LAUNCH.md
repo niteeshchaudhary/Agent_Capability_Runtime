@@ -11,9 +11,18 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 
 ## README & positioning
 
+- [x] Badges (CI, MIT, TypeScript, Node, RFC, PRs welcome)
 - [x] Project status (RFC stable vs implementation alpha)
 - [x] Architecture visual — [docs/assets/architecture.svg](./docs/assets/architecture.svg)
-- [ ] Terminal screenshot — run `pnpm demo:wow`, save as `docs/assets/demo-wow.png`
+- [x] Threat stories on README front page
+- [x] Comparison table — [docs/comparison.md](./docs/comparison.md)
+- [x] Who is this NOT for — [docs/who-is-this-not-for.md](./docs/who-is-this-not-for.md)
+- [x] Roadmap — [ROADMAP.md](./ROADMAP.md)
+- [x] README trimmed — deep sections in [docs/overview.md](./docs/overview.md)
+- [x] Security verification checklist — [docs/security-verification.md](./docs/security-verification.md)
+- [x] Naming checklist — [docs/naming-and-branding.md](./docs/naming-and-branding.md)
+- [ ] Terminal GIF or asciinema — [docs/recording-demo.md](./docs/recording-demo.md)
+- [ ] Terminal screenshot — optional `docs/assets/demo-wow.png`
 - [x] [docs/use-cases.md](./docs/use-cases.md) — who should adopt today
 - [x] [docs/why-not-oauth.md](./docs/why-not-oauth.md) — positioning moat
 - [x] [docs/threat-stories.md](./docs/threat-stories.md) — narrative security stories
