@@ -1,32 +1,81 @@
 # Agent Capability Runtime (ACR)
 
-**A runtime-native permission system for AI agents.**
+**Runtime-enforced capability permissions for AI agents.**
 
-ACR sits between your agent and external tools (Gmail, Slack, HTTP APIs). Every action is authorized by a short-lived, scoped **capability token**, evaluated against **policy constraints**, logged to an **audit trail**, and optionally paused for **human approval** before execution.
+OAuth was built for humans clicking “Allow once.” Autonomous agents need **per-action** governance: short-lived tokens, policy at execute time, human approval, instant revocation, and audit.
 
 [![CI](https://github.com/agent-capability-runtime/Agent_Capability_Runtime/actions/workflows/ci.yml/badge.svg)](https://github.com/agent-capability-runtime/Agent_Capability_Runtime/actions/workflows/ci.yml)
 
 ---
 
-## What problem does this solve?
+## See it in 60 seconds
 
-Traditional authorization gives agents **broad, static access**:
+```bash
+git clone https://github.com/agent-capability-runtime/Agent_Capability_Runtime.git
+cd Agent_Capability_Runtime
+pnpm install
+pnpm build
+pnpm demo:wow
+```
 
-- “Full Gmail access”
-- “Slack workspace admin”
-- “Database read/write”
+You will see:
 
-That model breaks down for autonomous agents. They need **temporary**, **narrow**, **context-specific** permissions that are enforced **at execution time**, not only at login.
+1. **DENY** — agent emails `gmail.com` → blocked (domain policy)
+2. **REQUIRE_APPROVAL** — payment over $100 → human gate
+3. **DENY** — capability revoked mid-session → `token_revoked`
 
-| Traditional auth | Agent Capability Runtime |
-|------------------|--------------------------|
-| Identity-centric (“who is this user?”) | Capability-centric (“what may this agent do right now?”) |
-| Long-lived OAuth scopes | Short-lived JWTs (default 15 minutes) |
-| All-or-nothing tool access | Per-tool constraints (domains, URLs, action limits) |
-| Hard to audit per action | Every attempt logged with decision + reason |
-| No built-in human gate | Pause for approval when policy requires it |
+Full walkthrough: `pnpm demo` · Presenter guide: [docs/demo.md](./docs/demo.md)
 
-**ACR answers:** *“Can this agent send this email to this address right now, under these limits, with a record of who allowed it?”*
+---
+
+## The hook (copy-paste)
+
+```typescript
+import { AcrClient, can } from "@acr/sdk";
+
+const client = new AcrClient({
+  baseUrl: "http://localhost:3000",
+  local: { secret: process.env.ACR_SIGNING_SECRET!, adapters: { mode: "stub" } },
+});
+
+const { token } = await client.grant(
+  can("gmail.send").onlyDomain("company.com").limit(5).expiresIn("10m").toGrantInput({
+    agentId: "support_agent",
+  }),
+);
+
+const result = await client.execute({
+  token,
+  tool: "gmail.send",
+  payload: { to: "attacker@gmail.com", subject: "Export", body: "All contacts" },
+});
+
+// → DENY: external domain blocked
+```
+
+**Opinionated SDK** — memorable, tweetable:
+
+```typescript
+can("gmail.send")
+  .onlyDomain("company.com")
+  .limit(5)
+  .maxSpend(100_00)   // $100 — over limit requires approval
+  .expiresIn("10m")
+  .toGrantInput({ agentId: "agent_1" });
+```
+
+---
+
+## Without ACR vs with ACR
+
+| Without ACR | With ACR |
+|-------------|----------|
+| Prompt injection → unrestricted tool use | Runtime **DENY** at execute |
+| Broad OAuth scope for hours | Scoped JWT for **minutes** |
+| No kill switch | **`runtime.revoke(jti)`** instant block |
+| “What did the agent do?” | **Audit** per decision |
+
+More scenarios: [docs/threat-examples.md](./docs/threat-examples.md)
 
 ---
 
@@ -41,360 +90,198 @@ That model breaks down for autonomous agents. They need **temporary**, **narrow*
                     ┌─────────────────────┼─────────────────────┐
                     ▼                     ▼                     ▼
              Validate JWT          Policy engine          Tool adapters
-             (signature, exp)      (constraints)          (stub or live)
+             Revocation check       Intent + constraints   Sandbox (timeout, SSRF)
                     │                     │                     │
                     └─────────────────────┴─────────────────────┘
-                                          │
                                           ▼
                                     Audit log + approvals
 ```
 
-1. **Grant** — Issue a signed capability JWT for an agent + tool + constraints.
-2. **Execute** — Agent calls the runtime with the token and a tool payload.
-3. **Decide** — Runtime returns `ALLOW`, `DENY`, or `REQUIRE_APPROVAL`.
-4. **Act** — On allow, the adapter calls the real API (or a stub in dev).
-5. **Record** — Every path writes an audit event; approvals can be resumed later.
+Diagrams (Mermaid): [docs/architecture-diagrams.md](./docs/architecture-diagrams.md)
 
----
-
-## What we built
-
-This repository is a **TypeScript monorepo** implementing the full MVP from the [Blueprint](./Blueprint.md):
-
-| Component | Package | Description |
-|-----------|---------|-------------|
-| Capability tokens | `@acr/capability-token` | HS256 JWT grant, validation, constraint mapping |
-| Policy engine | `@acr/policy-engine` | Evaluates constraints → `ALLOW` / `DENY` / `REQUIRE_APPROVAL` |
-| Runtime | `@acr/runtime` | Orchestrates grant, execute, action counting, approvals |
-| Adapters | `@acr/adapters` | Gmail, Slack (stub + live), HTTP (`fetch`) |
-| Audit | `@acr/audit` | In-memory or JSONL file audit log with query filters |
-| SDK | `@acr/sdk` | In-process or HTTP client for the gateway |
-| Gateway | `apps/gateway` | Self-hosted Hono HTTP API |
-
-### Supported tools (v1)
-
-| Tool ID | Description |
-|---------|-------------|
-| `gmail.send` | Send email (stub or Gmail API) |
-| `slack.send` | Post message (stub or Slack API) |
-| `http.request` | Generic HTTP with method/URL policy |
-
-### Policy constraints (v1)
-
-Constraints are embedded in the token and checked on every execution:
-
-| Constraint | Example use |
-|------------|-------------|
-| `allowedDomains` | Gmail: only `@company.com` recipients |
-| `maxActions` | Max N successful sends per token |
-| `allowedMethods` / `allowedUrls` | HTTP: GET-only to `api.company.com` |
-| `attachments` | Block email attachments |
-| `allowedHours` | Only run during 9–17 UTC |
-| `approvalRequired` | Always pause for human approval |
-| `approvalRequiredIfExternal` | Approve sends outside the domain allowlist |
-
-See [docs/policy-constraints.md](./docs/policy-constraints.md) for the full schema and evaluation order.
-
-### Human-in-the-loop approvals
-
-When policy returns `REQUIRE_APPROVAL`, execution pauses. A reviewer approves via API; the agent retries with the same token, payload, and `approvalId`.
-
-### Live integrations
-
-Gmail and Slack adapters can call real APIs when credentials are configured. See [docs/adapters-setup.md](./docs/adapters-setup.md).
-
-### Research foundation
-
-[agent-identity-auth-synthesis.md](./agent-identity-auth-synthesis.md) synthesizes six papers on agent identity and auth (DID/VC, A-JWT, OIDC-A, IETF AIMS, etc.) and informed this design.
-
-### Protocol specifications (RFC v1.0 Stable)
-
-Normative specs define interoperability and shared terminology ([STABLE release notes](./docs/rfc/STABLE.md)):
-
-| RFC | Title |
-|-----|-------|
-| [RFC-0001](./docs/rfc/RFC-0001-capability-token.md) | **Capability Token** — JWT profile, claims, delegation |
-| [RFC-0002](./docs/rfc/RFC-0002-runtime-execution.md) | **Runtime Execution** — policy decisions, consumption, approvals |
-| [RFC-0003](./docs/rfc/RFC-0003-audit-lineage.md) | **Audit Lineage** — events, snapshots, correlation |
-| [RFC-0004](./docs/rfc/RFC-0004-distributed-consumption.md) | **Distributed Consumption** — Redis ledger for scale-out |
-| [RFC-0005](./docs/rfc/RFC-0005-admin-authentication.md) | **Admin Auth** — protect grant/delegate |
-
-See [docs/rfc/STABLE.md](./docs/rfc/STABLE.md) and [docs/rfc/README.md](./docs/rfc/README.md) for the v1.0 protocol release.
-
----
-
-## Live demo
-
-**Best for presentations** — step-by-step walkthrough with clear ALLOW / DENY / APPROVAL output:
-
-```bash
-npx pnpm@9.15.0 demo              # interactive (press Enter between steps)
-npx pnpm@9.15.0 demo -- --auto   # run all steps without pausing
-```
-
-**HTTP gateway demo** (start `pnpm dev:gateway` in another terminal first):
-
-```bash
-npx pnpm@9.15.0 demo:http
-```
-
-Full presenter guide: [docs/demo.md](./docs/demo.md)
+1. **Grant** — Issue a signed capability JWT (`HS256`, `RS256`, or `EdDSA`).
+2. **Execute** — Agent calls runtime with token + payload.
+3. **Decide** — `ALLOW`, `DENY`, `REQUIRE_APPROVAL`, or `SIMULATE`.
+4. **Act** — Adapter runs only on ALLOW (sandboxed).
+5. **Record** — Audit event; optional hash chain; approvals resumable.
 
 ---
 
 ## Quick start
 
-**Requirements:** Node.js 20+
+**Requirements:** Node.js 20+, pnpm 9+
 
 ```bash
-git clone https://github.com/agent-capability-runtime/Agent_Capability_Runtime.git
-cd Agent_Capability_Runtime
-npx pnpm@9.15.0 install
-npx pnpm@9.15.0 build
-npx pnpm@9.15.0 test
+pnpm install
+pnpm build
+pnpm test
+pnpm demo:wow          # 30s “wow” demo
+pnpm demo              # full interactive demo
+pnpm dev:gateway       # HTTP API on :3000
 ```
 
-Run the end-to-end demo (in-process, no server):
+Gateway env: copy `apps/gateway/.env.example` → set `ACR_SIGNING_SECRET` (32+ chars).
 
-```bash
-npx pnpm@9.15.0 example:e2e        # grant → allow → deny
-npx pnpm@9.15.0 example:approval   # pause → approve → resume
-```
+---
+
+## What we built
+
+| Component | Package | Description |
+|-----------|---------|-------------|
+| Capability tokens | `@acr/capability-token` | JWT grant/validate, RS256/EdDSA, delegation |
+| Policy engine | `@acr/policy-engine` | `can()` DSL, intent-aware rules |
+| Runtime | `@acr/runtime` | Execute, revoke, sandbox, Redis opt-in |
+| Adapters | `@acr/adapters` | Gmail, Slack, HTTP |
+| Audit | `@acr/audit` | JSONL + optional tamper-evident chain |
+| SDK | `@acr/sdk` | `AcrClient` + `can()` fluent API |
+| Gateway | `apps/gateway` | Self-hosted Hono HTTP API |
+
+### Supported tools
+
+| Tool ID | Description |
+|---------|-------------|
+| `gmail.send` | Email (stub or live Gmail) |
+| `slack.send` | Slack message |
+| `http.request` | HTTP with method/URL policy |
+
+### Policy highlights
+
+| Feature | Example |
+|---------|---------|
+| Domain allowlist | `.onlyDomain("company.com")` |
+| Action budget | `.limit(5)` |
+| Spending approval | `.maxSpend(10000)` → over $100 needs approver |
+| Intent governance | `.whenIntent("customer_support")` |
+| Human gate | `.requireApprovalIfExternal()` |
+| Revocation | `await runtime.revoke(jti)` |
+
+See [docs/policy-constraints.md](./docs/policy-constraints.md) · [docs/intent-aware-policy.md](./docs/intent-aware-policy.md)
 
 ---
 
 ## How to use it
 
-You can integrate ACR in three ways.
+### SDK (in-process)
 
-### Option 1: SDK (in-process) — fastest for apps
-
-Embed the runtime directly in your Node.js service:
-
-```ts
-import { AcrClient } from "@acr/sdk";
+```typescript
+import { AcrClient, can } from "@acr/sdk";
 
 const client = new AcrClient({
-  baseUrl: "http://localhost:3000", // unused when local is set
   local: {
     secret: process.env.ACR_SIGNING_SECRET!,
-    adapters: { mode: "stub" }, // or "live" with Gmail/Slack tokens
+    adapters: { mode: "stub" },
   },
 });
 
-// 1. Grant a scoped capability
-const { token } = await client.grant({
-  agentId: "support_agent_1",
-  tool: "gmail.send",
-  constraints: {
-    allowedDomains: ["company.com"],
-    maxActions: 5,
-    attachments: false,
-  },
-  expiresIn: "15m",
-  delegator: "user_42",
-});
+const { token } = await client.grant(
+  can("gmail.send").onlyDomain("company.com").limit(5).toGrantInput({
+    agentId: "support_agent_1",
+    delegator: "user_42",
+  }),
+);
 
-// 2. Execute through the runtime (policy enforced)
 const result = await client.execute({
   token,
   tool: "gmail.send",
-  payload: {
-    to: "customer@company.com",
-    subject: "Re: your ticket",
-    body: "We received your request.",
-  },
+  payload: { to: "customer@company.com", subject: "Re: ticket", body: "On it." },
 });
 
-if (result.ok) {
-  console.log("Sent:", result.result);
-} else if (result.decision === "REQUIRE_APPROVAL") {
-  console.log("Needs approval:", result.approvalId);
-  // Human approves, then retry with approvalId
-} else {
-  console.log("Denied:", result.reason);
-}
+if (result.ok) console.log("Sent:", result.result);
+else if (result.decision === "REQUIRE_APPROVAL") console.log("Approval:", result.approvalId);
+else console.log("Denied:", result.reason);
 ```
 
-### Option 2: HTTP gateway — best for microservices
-
-Run the gateway and call it from any language:
+### HTTP gateway
 
 ```bash
-cp apps/gateway/.env.example apps/gateway/.env
-# Set ACR_SIGNING_SECRET (min 32 characters)
-npx pnpm@9.15.0 dev:gateway
+pnpm dev:gateway
 ```
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `POST` | `/capabilities/grant` | Issue a capability token |
-| `POST` | `/runtime/execute` | Run a tool (with optional `approvalId`) |
-| `GET` | `/audit` | Query audit events |
-| `GET` | `/approvals` | List approval requests |
-| `POST` | `/approvals/:id/approve` | Approve a pending action |
-| `POST` | `/approvals/:id/reject` | Reject a pending action |
-| `GET` | `/health` | Liveness check |
+| `POST` | `/capabilities/grant` | Issue token |
+| `POST` | `/runtime/execute` | Execute tool |
+| `POST` | `/capabilities/revoke` | Revoke `jti` |
+| `GET` | `/audit` | Query audit |
+| `GET` | `/audit/verify` | Verify hash chain |
 
-Example grant (curl):
+Full API: [docs/runtime-api.md](./docs/runtime-api.md) · [docs/getting-started.md](./docs/getting-started.md)
 
-```bash
-curl -s -X POST http://localhost:3000/capabilities/grant \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agentId": "agent_1",
-    "tool": "gmail.send",
-    "constraints": {
-      "allowedDomains": ["company.com"],
-      "maxActions": 5
-    }
-  }'
-```
+### Signing (production)
 
-### Option 3: Libraries only — tokens or policy without the full runtime
+| Algorithm | Config |
+|-----------|--------|
+| HS256 (dev) | `ACR_SIGNING_SECRET` |
+| RS256 / EdDSA | `ACR_SIGNING_PRIVATE_KEY` + `ACR_SIGNING_PUBLIC_KEY` |
 
-Use individual packages when you only need part of the stack:
-
-```ts
-// Token only
-import { grantCapability, validateCapability } from "@acr/capability-token";
-
-// Policy only
-import { evaluatePolicy } from "@acr/policy-engine";
-
-// Full runtime without HTTP
-import { AgentCapabilityRuntime } from "@acr/runtime";
-```
+[docs/signing-algorithms.md](./docs/signing-algorithms.md)
 
 ---
 
-## Approval workflow example
+## Demos
 
-```ts
-const pending = await client.execute({
-  token,
-  tool: "gmail.send",
-  payload: { to: "partner@gmail.com", subject: "Hi", body: "..." },
-});
-// → REQUIRE_APPROVAL (external domain)
+| Command | What you get |
+|---------|----------------|
+| `pnpm demo:wow` | 30s — deny, approval, revoke |
+| `pnpm demo:quick` | Same as wow (alias) |
+| `pnpm demo` | Full interactive tour |
+| `pnpm demo:http` | Against running gateway |
 
-await client.approve(pending.approvalId!, "manager_7");
+---
 
-const allowed = await client.execute({
-  token,
-  tool: "gmail.send",
-  payload: { to: "partner@gmail.com", subject: "Hi", body: "..." },
-  approvalId: pending.approvalId,
-});
-// → ALLOW
+## Documentation map
+
+| Doc | Topic |
+|-----|-------|
+| [getting-started.md](./docs/getting-started.md) | Install, gateway, Redis |
+| [threat-examples.md](./docs/threat-examples.md) | Security narrative |
+| [architecture-diagrams.md](./docs/architecture-diagrams.md) | Mermaid flows |
+| [demo.md](./docs/demo.md) | Presenter script |
+| [policy-dsl.md](./docs/policy-dsl.md) | `can()` reference |
+| [distributed-revocation.md](./docs/distributed-revocation.md) | Redis revoke |
+| [signed-audit-chain.md](./docs/signed-audit-chain.md) | Tamper-evident audit |
+| [sandbox-adapters.md](./docs/sandbox-adapters.md) | SSRF guard, timeouts |
+
+### Protocol (RFC v1.0 Stable)
+
+| RFC | Title |
+|-----|-------|
+| [RFC-0001](./docs/rfc/RFC-0001-capability-token.md) | Capability Token |
+| [RFC-0002](./docs/rfc/RFC-0002-runtime-execution.md) | Runtime Execution |
+| [RFC-0003](./docs/rfc/RFC-0003-audit-lineage.md) | Audit Lineage |
+| [RFC-0004](./docs/rfc/RFC-0004-distributed-consumption.md) | Distributed Consumption |
+| [RFC-0005](./docs/rfc/RFC-0005-admin-authentication.md) | Admin Auth |
+
+[Index of all RFCs](./docs/rfc/README.md) · [STABLE release](./docs/rfc/STABLE.md)
+
+---
+
+## Monorepo layout
+
 ```
-
-Details: [docs/audit-and-approvals.md](./docs/audit-and-approvals.md)
-
----
-
-## Configuration
-
-### Gateway environment variables
-
-| Variable | Description |
-|----------|-------------|
-| `ACR_SIGNING_SECRET` | JWT signing secret (min 32 chars) **required** |
-| `ACR_ISSUER` | Token issuer claim (default `acr-runtime`) |
-| `PORT` | HTTP port (default `3000`) |
-| `ACR_ADAPTER_MODE` | `stub` \| `live` \| `auto` (default `auto`) |
-| `GMAIL_ACCESS_TOKEN` | Gmail API OAuth token |
-| `SLACK_BOT_TOKEN` | Slack bot token |
-| `ACR_AUDIT_PATH` | JSONL file for persistent audit log |
-| `ACR_APPROVAL_PATH` | JSON file for persistent approvals |
-
-Copy [apps/gateway/.env.example](./apps/gateway/.env.example) to get started.
-
----
-
-## Repository layout
-
-```text
 packages/
-  capability-token/   @acr/capability-token   JWT grant + validate
-  policy-engine/      @acr/policy-engine      Constraint evaluation
-  runtime/            @acr/runtime            Execute orchestration
-  adapters/           @acr/adapters           Gmail, Slack, HTTP
-  audit/              @acr/audit              Audit logging
-  sdk/                @acr/sdk                Client library
+  capability-token/   # JWT grant, validate, delegate
+  policy-engine/      # can() DSL + evaluation
+  runtime/            # Orchestration
+  adapters/           # Tool implementations
+  audit/              # Audit store
+  sdk/                # Developer client
 apps/
-  gateway/            Hono HTTP server
-docs/                 Specs, guides, API contracts
-examples/             Runnable demos
+  gateway/            # HTTP API
+examples/             # demo, demo:wow, e2e
+docs/                 # Guides + RFCs
 ```
 
 ---
 
-## Install from npm
+## Research & blueprint
 
-```bash
-npm install @acr/sdk
-# or
-npm install @acr/runtime @acr/capability-token
-```
-
-Publish instructions: [docs/publishing.md](./docs/publishing.md)
-
----
-
-## Development
-
-```bash
-npx pnpm@9.15.0 install
-npx pnpm@9.15.0 build
-npx pnpm@9.15.0 test          # 123 tests across all packages
-npx pnpm@9.15.0 example:token
-```
-
-Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
-
----
-
-## Documentation
-
-| Doc | Description |
-|-----|-------------|
-| [RFC-0001: Capability Token](./docs/rfc/RFC-0001-capability-token.md) | **Normative** JWT spec |
-| [RFC-0002: Runtime Execution](./docs/rfc/RFC-0002-runtime-execution.md) | **Normative** execute, policy, consumption |
-| [RFC-0003: Audit Lineage](./docs/rfc/RFC-0003-audit-lineage.md) | **Normative** audit events |
-| [RFC-0004: Distributed Consumption](./docs/rfc/RFC-0004-distributed-consumption.md) | **Normative** Redis / shared ledger |
-| [RFC-0005: Admin Authentication](./docs/rfc/RFC-0005-admin-authentication.md) | **Normative** grant/delegate protection |
-| [RFC v1.0 Stable](./docs/rfc/STABLE.md) | Conformance checklist and promotion record |
-| [RFC index](./docs/rfc/README.md) | All RFCs and reading order |
-| [Getting started](./docs/getting-started.md) | Step-by-step setup |
-| [Capability token spec](./docs/capability-token-spec.md) | Developer summary (links to RFC-0001) |
-| [Runtime API](./docs/runtime-api.md) | HTTP endpoints |
-| [Policy constraints](./docs/policy-constraints.md) | Constraint reference |
-| [Policy DSL](./docs/policy-dsl.md) | Fluent `can("tool").where(...)` API |
-| [Adapter setup](./docs/adapters-setup.md) | Gmail & Slack credentials |
-| [Audit & approvals](./docs/audit-and-approvals.md) | Persistence and workflows |
-| [Threat model](./THREAT_MODEL.md) | Security threats and mitigations |
-| [Policy AST](./docs/policy-ast.md) | Normalized policy compilation |
-| [Gap tracker](./gap-fix.md) | Architecture gaps addressed |
-| [Docs index](./docs/README.md) | Full list |
-| [Blueprint](./Blueprint.md) | Product architecture |
-| [Changelog](./CHANGELOG.md) | Release notes |
-
----
-
-## What ACR is not (v1)
-
-ACR is intentionally focused. It is **not**:
-
-- A chatbot or agent orchestration framework
-- A full IAM / SSO / enterprise identity product
-- A workflow builder or no-code automation tool
-- A vector memory or RAG system
-
-It **is** the enforcement layer you put in front of tool calls so agents can act safely with proof of what was allowed, denied, or approved.
+- [agent-identity-auth-synthesis.md](./agent-identity-auth-synthesis.md) — academic survey
+- [Blueprint.md](./Blueprint.md) — original MVP spec
+- [THREAT_MODEL.md](./THREAT_MODEL.md) — security analysis
 
 ---
 
 ## License
 
-[MIT](./LICENSE)
+MIT — see [LICENSE](./LICENSE).

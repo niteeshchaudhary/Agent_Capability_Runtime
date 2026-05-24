@@ -1,4 +1,5 @@
 export { AcrClient } from "./client.js";
+export { can, domain, method, url, hours, intent } from "@acr/policy-engine";
 export type {
   AcrClientHttpConfig,
   ConstraintSet,

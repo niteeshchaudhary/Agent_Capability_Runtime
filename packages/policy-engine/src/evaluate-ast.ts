@@ -95,6 +95,21 @@ function evaluateCondition(
       return pass(condition.kind);
     }
 
+    case "spending_limit": {
+      const limitCents = (condition.params?.limitCents as number) ?? 0;
+      const amount = ctx.payload.amount;
+      if (typeof amount === "number" && amount > limitCents) {
+        if (ctx.approvalGranted) return pass(condition.kind);
+        const dollars = (limitCents / 100).toFixed(2);
+        return fail(
+          "REQUIRE_APPROVAL",
+          `spending $${(amount / 100).toFixed(2)} exceeds limit $${dollars} — approval required`,
+          condition.kind,
+        );
+      }
+      return pass(condition.kind);
+    }
+
     case "approval_required_if_external": {
       if (ctx.tool !== "gmail.send") return pass(condition.kind);
       const domain = extractEmailDomain(ctx.payload.to);

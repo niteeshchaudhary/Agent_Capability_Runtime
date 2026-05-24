@@ -26,6 +26,13 @@ export function compilePolicy(tool: ToolId, constraints: ConstraintSet): PolicyD
     conditions.push({ kind: "approval_required" });
   }
 
+  if (constraints.spendingLimit !== undefined) {
+    conditions.push({
+      kind: "spending_limit",
+      params: { limitCents: constraints.spendingLimit },
+    });
+  }
+
   if (constraints.allowedIntentCategories?.length) {
     conditions.push({
       kind: "intent_category",

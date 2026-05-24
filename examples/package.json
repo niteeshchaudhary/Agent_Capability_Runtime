@@ -6,6 +6,8 @@
     "e2e": "tsx e2e-local.ts",
     "approval": "tsx e2e-approval.ts",
     "demo": "tsx demo.ts",
+    "demo:wow": "tsx demo-wow.ts",
+    "demo:quick": "tsx demo-quick.ts",
     "demo:http": "tsx demo-http.ts"
   },
   "dependencies": {

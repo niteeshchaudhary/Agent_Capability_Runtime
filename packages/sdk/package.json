@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@acr/capability-token": "workspace:*",
+    "@acr/policy-engine": "workspace:*",
     "@acr/runtime": "workspace:*"
   },
   "devDependencies": {

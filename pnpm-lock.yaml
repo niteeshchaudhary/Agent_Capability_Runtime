@@ -158,6 +158,9 @@ importers:
       '@acr/capability-token':
         specifier: workspace:*
         version: link:../capability-token
+      '@acr/policy-engine':
+        specifier: workspace:*
+        version: link:../policy-engine
       '@acr/runtime':
         specifier: workspace:*
         version: link:../runtime

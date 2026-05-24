@@ -101,6 +101,18 @@ describe("policy DSL", () => {
     expect(constraints.allowedIntentCategories).toEqual(["customer_support"]);
   });
 
+  it("onlyDomain and expiresIn build grant-friendly constraints", () => {
+    const input = can("gmail.send")
+      .onlyDomain("company.com")
+      .limit(5)
+      .expiresIn("10m")
+      .toGrantInput({ agentId: "a1" });
+
+    expect(input.constraints.allowedDomains).toEqual(["company.com"]);
+    expect(input.constraints.maxActions).toBe(5);
+    expect(input.expiresIn).toBe("10m");
+  });
+
   it("whenIntentAction adds category and action constraints", () => {
     const constraints = can("gmail.send")
       .whenIntentAction("customer_support", "reply_email")

@@ -2,14 +2,37 @@ import type { ConstraintSet, GrantCapabilityInput, ToolId } from "@acr/capabilit
 import { compilePolicy } from "../compile.js";
 import type { PolicyDocument } from "../ast.js";
 import type { PolicyPredicate } from "./predicates.js";
+import { domain } from "./predicates.js";
 
 export class PolicyBuilder {
   private readonly tool: ToolId;
   private predicates: PolicyPredicate[] = [];
   private constraints: ConstraintSet = {};
+  private grantExpiresIn?: string | number;
 
   constructor(tool: ToolId) {
     this.tool = tool;
+  }
+
+  /** Gmail: only send to these recipient domains. */
+  onlyDomain(domainName: string): this {
+    return this.onlyDomains(domainName);
+  }
+
+  /** Gmail: allow-list recipient domains. */
+  onlyDomains(...domainNames: string[]): this {
+    return this.where(domain.in(domainNames));
+  }
+
+  /** Token TTL passed to grant (e.g. `"10m"`, `"1h"`). */
+  expiresIn(duration: string | number): this {
+    this.grantExpiresIn = duration;
+    return this;
+  }
+
+  /** Max spend in USD cents; amounts over limit require human approval. */
+  maxSpend(cents: number): this {
+    return this.spendingLimit(cents);
   }
 
   /** Add declarative predicates (domain, method, url, hours). */
@@ -97,12 +120,13 @@ export class PolicyBuilder {
 
   /** Build a grant input — use with `grantCapability` or runtime.grant */
   toGrantInput(
-    input: Omit<GrantCapabilityInput, "tool" | "constraints">,
+    input: Omit<GrantCapabilityInput, "tool" | "constraints" | "expiresIn">,
   ): GrantCapabilityInput {
     return {
       ...input,
       tool: this.tool,
       constraints: this.build(),
+      ...(this.grantExpiresIn !== undefined ? { expiresIn: this.grantExpiresIn } : {}),
     };
   }
 }

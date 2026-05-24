@@ -21,6 +21,8 @@
     "example:e2e": "pnpm --filter @acr/examples run e2e",
     "example:approval": "pnpm --filter @acr/examples run approval",
     "demo": "pnpm --filter @acr/examples run demo",
+    "demo:wow": "pnpm --filter @acr/examples run demo:wow",
+    "demo:quick": "pnpm --filter @acr/examples run demo:quick",
     "demo:http": "pnpm --filter @acr/examples run demo:http",
     "dev:gateway": "pnpm --filter @acr/gateway run dev",
     "publish:packages": "pnpm build && pnpm -r --filter './packages/*' publish --access public --no-git-checks"

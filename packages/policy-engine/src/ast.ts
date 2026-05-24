@@ -11,7 +11,8 @@ export type PolicyConditionKind =
   | "http_method"
   | "http_url"
   | "intent_category"
-  | "intent_action";
+  | "intent_action"
+  | "spending_limit";
 
 export interface PolicyCondition {
   kind: PolicyConditionKind;
