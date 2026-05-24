@@ -2,6 +2,7 @@ import type {
   CapabilityTokenClaims,
   ConstraintSet,
   DelegateCapabilityInput,
+  ExecutionIntent,
   GrantCapabilityInput,
   ToolId,
 } from "@acr/capability-token";
@@ -37,7 +38,7 @@ export interface ExecuteInput {
   payload: Record<string, unknown>;
   approvalId?: string;
   requestId?: string;
-  intent?: string;
+  intent?: ExecutionIntent | string;
   simulate?: boolean;
 }
 

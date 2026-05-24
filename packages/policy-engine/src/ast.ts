@@ -9,7 +9,9 @@ export type PolicyConditionKind =
   | "gmail_allowed_domains"
   | "gmail_attachments"
   | "http_method"
-  | "http_url";
+  | "http_url"
+  | "intent_category"
+  | "intent_action";
 
 export interface PolicyCondition {
   kind: PolicyConditionKind;

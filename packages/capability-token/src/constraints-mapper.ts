@@ -30,6 +30,12 @@ export function constraintsToJwt(constraints: ConstraintSet): JwtConstraintSet {
   if (constraints.approvalRequiredIfExternal !== undefined) {
     jwt.approval_required_if_external = constraints.approvalRequiredIfExternal;
   }
+  if (constraints.allowedIntentCategories !== undefined) {
+    jwt.allowed_intent_categories = constraints.allowedIntentCategories;
+  }
+  if (constraints.allowedIntentActions !== undefined) {
+    jwt.allowed_intent_actions = constraints.allowedIntentActions;
+  }
 
   return jwt;
 }
@@ -63,6 +69,12 @@ export function constraintsFromJwt(jwt: JwtConstraintSet): ConstraintSet {
   }
   if (jwt.approval_required_if_external !== undefined) {
     constraints.approvalRequiredIfExternal = jwt.approval_required_if_external;
+  }
+  if (jwt.allowed_intent_categories !== undefined) {
+    constraints.allowedIntentCategories = jwt.allowed_intent_categories;
+  }
+  if (jwt.allowed_intent_actions !== undefined) {
+    constraints.allowedIntentActions = jwt.allowed_intent_actions;
   }
 
   return constraints;

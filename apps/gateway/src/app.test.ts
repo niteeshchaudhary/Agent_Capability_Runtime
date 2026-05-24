@@ -93,6 +93,47 @@ describe("gateway routes", () => {
     expect(res.status).toBe(401);
   });
 
+  it("POST /capabilities/revoke returns 200 and blocks execute", async () => {
+    const runtime = makeRuntime();
+    const app = createApp(runtime, { adminAuth: { apiKeys: [ADMIN_KEY] } });
+    const { token, claims } = await runtime.grant({
+      agentId: "a",
+      tool: "slack.send",
+      constraints: {},
+    });
+
+    const revokeRes = await app.request("/capabilities/revoke", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ADMIN_KEY}`,
+      },
+      body: JSON.stringify({ capabilityId: claims.jti, reason: "test revoke" }),
+    });
+    expect(revokeRes.status).toBe(200);
+
+    const execRes = await app.request("/runtime/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        tool: "slack.send",
+        payload: { channel: "#x", text: "y" },
+      }),
+    });
+    expect(execRes.status).toBe(403);
+    const body = (await execRes.json()) as { code: string };
+    expect(body.code).toBe("token_revoked");
+  });
+
+  it("GET /adapters/capabilities lists tools", async () => {
+    const app = createApp(makeRuntime());
+    const res = await app.request("/adapters/capabilities");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { capabilities: { tool: string }[] };
+    expect(body.capabilities.length).toBeGreaterThanOrEqual(3);
+  });
+
   it("POST /capabilities/grant returns 400 for invalid body", async () => {
     const app = createApp(makeRuntime());
     const res = await app.request("/capabilities/grant", {
@@ -278,6 +319,34 @@ describe("gateway routes", () => {
     const app = createApp(makeRuntime());
     const res = await app.request("/audit?limit=-1");
     expect(res.status).toBe(400);
+  });
+
+  it("GET /audit/verify reports chain status", async () => {
+    const runtime = new AgentCapabilityRuntime({
+      secret: SECRET,
+      adapters: { mode: "stub" },
+      auditChain: {
+        enabled: true,
+        signingSecret: "audit-chain-signing-secret-min-32-chars!!",
+      },
+    });
+    const app = createApp(runtime);
+    const { token } = await runtime.grant({
+      agentId: "a",
+      tool: "slack.send",
+      constraints: {},
+    });
+    await runtime.execute({
+      token,
+      tool: "slack.send",
+      payload: { channel: "#x", text: "y" },
+    });
+
+    const res = await app.request("/audit/verify");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { enabled: boolean; valid: boolean };
+    expect(body.enabled).toBe(true);
+    expect(body.valid).toBe(true);
   });
 
   it("approval workflow via HTTP", async () => {

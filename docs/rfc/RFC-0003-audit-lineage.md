@@ -152,7 +152,7 @@ One JSON object per line; file path configured at runtime startup. Survives proc
 
 ### 7.3 Future: signed chain
 
-Tamper-evident hash chain (`hash_prev`, `signature`) — not in v1. Implementations MUST NOT claim tamper-evidence until specified.
+Tamper-evident hash chain (`hashPrev`, `hash`, optional `signature`) — **optional v1** via `auditChain.enabled` ([signed-audit-chain.md](../signed-audit-chain.md)). Default off.
 
 ---
 
@@ -190,7 +190,7 @@ See [THREAT_MODEL.md](../../THREAT_MODEL.md).
 | `policySnapshot`, `lineage` | runtime audit calls | Implemented |
 | JSONL file store | `file-audit-log.ts` | Implemented |
 | `SIMULATE` in audit | audit types | Implemented |
-| Signed hash chain | — | Planned |
+| Signed hash chain | `hash-chain.ts`, `verifyChain()` | Implemented (opt-in) |
 | Intent-aware retention | — | Planned |
 
 ---

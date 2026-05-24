@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { constraintsToJwt } from "./constraints-mapper.js";
+import { normalizeExecutionIntent } from "./intent.js";
 import { createTokenId, parseExpiresIn } from "./duration.js";
 import { grantCapabilityInputSchema } from "./schema.js";
+import { resolveSigningMaterial } from "./signing.js";
 import {
   DEFAULT_EXPIRES_IN,
   DEFAULT_ISSUER,
@@ -12,13 +14,6 @@ import {
   type SignerOptions,
   type ToolId,
 } from "./types.js";
-
-function secretToKey(secret: string): Uint8Array {
-  if (secret.length < 32) {
-    throw new Error("Signing secret must be at least 32 characters");
-  }
-  return new TextEncoder().encode(secret);
-}
 
 export async function grantCapability(
   input: GrantCapabilityInput,
@@ -50,7 +45,10 @@ export async function grantCapability(
   if (parsed.session !== undefined) claims.session = parsed.session;
   if (parsed.task !== undefined) claims.task = parsed.task;
   if (parsed.intent !== undefined) {
-    claims.metadata = { ...claims.metadata, intent: parsed.intent };
+    const normalized = normalizeExecutionIntent(parsed.intent);
+    if (normalized) {
+      claims.metadata = { ...claims.metadata, intent: normalized };
+    }
   }
   if (parsed.metadata !== undefined) {
     claims.metadata = { ...claims.metadata, ...parsed.metadata };
@@ -60,15 +58,16 @@ export async function grantCapability(
   if (parsed.delegatorChain !== undefined) claims.delegator_chain = parsed.delegatorChain;
 
   const payload: JWTPayload = { ...claims };
+  const material = await resolveSigningMaterial(options);
 
   const token = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setProtectedHeader({ alg: material.algorithm, typ: "JWT" })
     .setIssuedAt(now)
     .setExpirationTime(exp)
     .setIssuer(issuer)
     .setSubject(parsed.agentId)
     .setJti(jti)
-    .sign(secretToKey(options.secret));
+    .sign(material.signKey);
 
   return {
     token,

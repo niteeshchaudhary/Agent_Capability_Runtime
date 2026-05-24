@@ -1,3 +1,4 @@
+import type { AuditChainVerification } from "./hash-chain.js";
 import type { AuditEvent, RecordAuditInput } from "./types.js";
 
 export interface AuditQuery {
@@ -13,6 +14,8 @@ export interface AuditStore {
   record(input: RecordAuditInput): AuditEvent;
   getById(id: string): AuditEvent | undefined;
   list(query?: AuditQuery): AuditEvent[];
+  /** Present when hash chain is enabled on this store */
+  verifyChain?(): AuditChainVerification;
 }
 
 export function matchesAuditQuery(event: AuditEvent, query?: AuditQuery): boolean {

@@ -1,15 +1,12 @@
 import { errors, jwtVerify } from "jose";
 import { capabilityTokenClaimsSchema } from "./schema.js";
+import { algorithmsForMaterial, resolveSigningMaterial } from "./signing.js";
 import {
   type CapabilityTokenClaims,
   type ValidationFailure,
   type ValidationResult,
   type ValidatorOptions,
 } from "./types.js";
-
-function secretToKey(secret: string): Uint8Array {
-  return new TextEncoder().encode(secret);
-}
 
 function failure(
   code: ValidationFailure["error"]["code"],
@@ -29,8 +26,9 @@ export async function validateCapability(
   let payload: Record<string, unknown>;
 
   try {
-    const { payload: verified } = await jwtVerify(token, secretToKey(options.secret), {
-      algorithms: ["HS256"],
+    const material = await resolveSigningMaterial(options);
+    const { payload: verified } = await jwtVerify(token, material.verifyKey, {
+      algorithms: algorithmsForMaterial(material),
       clockTolerance: options.clockToleranceSec ?? 5,
     });
     payload = verified as Record<string, unknown>;
@@ -84,7 +82,9 @@ export async function validateCapability(
 /** Decode and validate without tool/issuer checks — useful for inspection */
 export async function decodeCapability(
   token: string,
-  secret: string,
+  options: ValidatorOptions | string,
 ): Promise<ValidationResult> {
-  return validateCapability(token, { secret });
+  const validator =
+    typeof options === "string" ? { secret: options } satisfies ValidatorOptions : options;
+  return validateCapability(token, validator);
 }

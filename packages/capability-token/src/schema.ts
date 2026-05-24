@@ -23,8 +23,15 @@ export const constraintSetSchema = z
     allowedHours: allowedHoursSchema.optional(),
     approvalRequired: z.boolean().optional(),
     approvalRequiredIfExternal: z.boolean().optional(),
+    allowedIntentCategories: z.array(z.string().min(1)).optional(),
+    allowedIntentActions: z.array(z.string().min(1)).optional(),
   })
   .strict();
+
+export const executionIntentSchema = z.object({
+  category: z.string().min(1),
+  action: z.string().min(1).optional(),
+});
 
 export const jwtConstraintSetSchema = z
   .object({
@@ -39,6 +46,8 @@ export const jwtConstraintSetSchema = z
     allowed_hours: allowedHoursSchema.optional(),
     approval_required: z.boolean().optional(),
     approval_required_if_external: z.boolean().optional(),
+    allowed_intent_categories: z.array(z.string().min(1)).optional(),
+    allowed_intent_actions: z.array(z.string().min(1)).optional(),
   })
   .strict();
 
@@ -53,7 +62,7 @@ export const grantCapabilityInputSchema = z
     delegator: z.string().min(1).optional(),
     session: z.string().min(1).optional(),
     task: z.string().min(1).optional(),
-    intent: z.string().min(1).optional(),
+    intent: z.union([z.string().min(1), executionIntentSchema]).optional(),
     metadata: z.record(z.unknown()).optional(),
     issuer: z.string().min(1).optional(),
     parentJti: z.string().regex(/^cap_[0-9a-f-]{36}$/).optional(),

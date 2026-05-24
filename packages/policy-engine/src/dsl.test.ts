@@ -95,4 +95,17 @@ describe("policy DSL", () => {
   it("rejects domain.in on wrong tool", () => {
     expect(() => can("slack.send").where(domain.in(["x.com"])).build()).toThrow(/gmail.send/);
   });
+
+  it("whenIntent adds allowedIntentCategories", () => {
+    const constraints = can("gmail.send").whenIntent("customer_support").build();
+    expect(constraints.allowedIntentCategories).toEqual(["customer_support"]);
+  });
+
+  it("whenIntentAction adds category and action constraints", () => {
+    const constraints = can("gmail.send")
+      .whenIntentAction("customer_support", "reply_email")
+      .build();
+    expect(constraints.allowedIntentCategories).toEqual(["customer_support"]);
+    expect(constraints.allowedIntentActions).toEqual(["reply_email"]);
+  });
 });

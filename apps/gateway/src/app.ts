@@ -1,4 +1,10 @@
-import { grantCapabilityInputSchema, toolIdSchema, constraintSetSchema, type ToolId } from "@acr/capability-token";
+import {
+  constraintSetSchema,
+  executionIntentSchema,
+  grantCapabilityInputSchema,
+  toolIdSchema,
+  type ToolId,
+} from "@acr/capability-token";
 import type { AgentCapabilityRuntime } from "@acr/runtime";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -17,7 +23,9 @@ const executeBodySchema = z.object({
   payload: z.record(z.unknown()),
   approvalId: z.string().optional(),
   requestId: z.string().optional(),
-  intent: z.string().optional(),
+  traceId: z.string().optional(),
+  sessionId: z.string().optional(),
+  intent: z.union([z.string().min(1), executionIntentSchema]).optional(),
   simulate: z.boolean().optional(),
 });
 
@@ -43,6 +51,18 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
   app.get("/health", (c) =>
     c.json({ status: "ok", version: GATEWAY_VERSION }),
   );
+
+  app.get("/adapters/capabilities", (c) => {
+    const tool = c.req.query("tool");
+    const parsedTool = tool ? toolIdSchema.safeParse(tool) : { success: true as const, data: undefined };
+    if (!parsedTool.success) {
+      return c.json({ error: "invalid_request", message: "Invalid tool" }, 400);
+    }
+  const capabilities = runtime.adapters.supportedCapabilities(
+    parsedTool.data as ToolId | undefined,
+  );
+    return c.json({ capabilities });
+  });
 
   app.post("/capabilities/grant", adminAuth, async (c) => {
     let body: unknown;
@@ -91,7 +111,7 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
     delegator: z.string().optional(),
     session: z.string().optional(),
     task: z.string().optional(),
-    intent: z.string().optional(),
+    intent: z.union([z.string().min(1), executionIntentSchema]).optional(),
     metadata: z.record(z.unknown()).optional(),
   });
 
@@ -140,6 +160,42 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
     }
   });
 
+  const revokeBodySchema = z.object({
+    capabilityId: z.string().min(1),
+    reason: z.string().optional(),
+    revokedBy: z.string().optional(),
+  });
+
+  app.post("/capabilities/revoke", adminAuth, async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_request", message: "Invalid JSON body" }, 400);
+    }
+
+    const parsed = revokeBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: "invalid_request",
+          message: parsed.error.errors.map((e) => e.message).join("; "),
+        },
+        400,
+      );
+    }
+
+    const record = await runtime.revoke(parsed.data.capabilityId, {
+      reason: parsed.data.reason,
+      revokedBy: parsed.data.revokedBy,
+    });
+    return c.json({ revoked: true, record }, 200);
+  });
+
+  app.get("/capabilities/revoked", adminAuth, async (c) =>
+    c.json({ revoked: await runtime.revocations.list() }),
+  );
+
   app.post("/runtime/execute", async (c) => {
     let body: unknown;
     try {
@@ -165,6 +221,8 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
       payload: parsed.data.payload,
       approvalId: parsed.data.approvalId,
       requestId: parsed.data.requestId,
+      traceId: parsed.data.traceId,
+      sessionId: parsed.data.sessionId,
       intent: parsed.data.intent,
       simulate: parsed.data.simulate,
     });
@@ -175,6 +233,7 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
         reason: result.reason,
         auditId: result.auditId,
         evaluatedConditions: result.evaluatedConditions,
+        executionPhase: result.executionPhase,
       });
     }
 
@@ -183,6 +242,7 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
         decision: result.decision,
         result: result.result,
         auditId: result.auditId,
+        executionPhase: result.executionPhase,
       });
     }
 
@@ -199,7 +259,11 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
     }
 
     const status =
-      result.code === "invalid_token" || result.code === "token_expired" ? 401 : 403;
+      result.code === "invalid_token" || result.code === "token_expired"
+        ? 401
+        : result.code === "token_revoked"
+          ? 403
+          : 403;
 
     return c.json(
       {
@@ -207,6 +271,7 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
         reason: result.reason,
         auditId: result.auditId,
         code: result.code,
+        executionPhase: result.executionPhase,
       },
       status,
     );
@@ -234,6 +299,18 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
 
     const events = runtime.audit.list(parsed.data);
     return c.json({ events });
+  });
+
+  app.get("/audit/verify", (c) => {
+    if (typeof runtime.audit.verifyChain !== "function") {
+      return c.json({
+        enabled: false,
+        valid: true,
+        eventCount: runtime.audit.list().length,
+        message: "audit hash chain not enabled",
+      });
+    }
+    return c.json(runtime.audit.verifyChain());
   });
 
   app.get("/approvals", (c) => {

@@ -1,4 +1,4 @@
-import type { ConstraintSet, ToolId } from "@acr/capability-token";
+import type { ConstraintSet, ExecutionIntent, ToolId } from "@acr/capability-token";
 import { compilePolicy } from "./compile.js";
 import {
   evaluatePolicyAst,
@@ -17,7 +17,7 @@ export interface PolicyEvaluationContext {
   approvalGranted?: boolean;
   nowUtcHour?: number;
   simulate?: boolean;
-  intent?: string;
+  intent?: ExecutionIntent;
 }
 
 export interface PolicyEvaluationResult {

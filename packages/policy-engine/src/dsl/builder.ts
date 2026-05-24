@@ -59,6 +59,33 @@ export class PolicyBuilder {
     return this;
   }
 
+  /**
+   * Allow executions whose intent category matches (semantic governance).
+   * @example .whenIntent("customer_support")
+   */
+  whenIntent(category: string): this {
+    const existing = this.constraints.allowedIntentCategories ?? [];
+    this.constraints = {
+      ...this.constraints,
+      allowedIntentCategories: [...existing, category],
+    };
+    return this;
+  }
+
+  /**
+   * Allow a specific category + action pair at execute time.
+   * @example .whenIntentAction("customer_support", "reply_email")
+   */
+  whenIntentAction(category: string, action: string): this {
+    this.whenIntent(category);
+    const existing = this.constraints.allowedIntentActions ?? [];
+    this.constraints = {
+      ...this.constraints,
+      allowedIntentActions: [...existing, action],
+    };
+    return this;
+  }
+
   build(): ConstraintSet {
     const fromPredicates = predicatesToConstraints(this.tool, this.predicates);
     return { ...fromPredicates, ...this.constraints };
@@ -110,6 +137,18 @@ function predicatesToConstraints(tool: ToolId, predicates: PolicyPredicate[]): C
       case "hours_between":
         out.allowedHours = { start: p.start, end: p.end };
         break;
+      case "intent_category": {
+        const existing = out.allowedIntentCategories ?? [];
+        out.allowedIntentCategories = [...existing, p.category];
+        break;
+      }
+      case "intent_action": {
+        const cats = out.allowedIntentCategories ?? [];
+        out.allowedIntentCategories = [...cats, p.category];
+        const acts = out.allowedIntentActions ?? [];
+        out.allowedIntentActions = [...acts, p.action];
+        break;
+      }
       default: {
         const _exhaustive: never = p;
         throw new Error(`Unknown predicate: ${JSON.stringify(_exhaustive)}`);
@@ -122,6 +161,16 @@ function predicatesToConstraints(tool: ToolId, predicates: PolicyPredicate[]): C
   }
   if (out.allowedMethods) {
     out.allowedMethods = [...new Set(out.allowedMethods.map((m) => m.toUpperCase()))];
+  }
+  if (out.allowedIntentCategories) {
+    out.allowedIntentCategories = [
+      ...new Set(out.allowedIntentCategories.map((c) => c.toLowerCase())),
+    ];
+  }
+  if (out.allowedIntentActions) {
+    out.allowedIntentActions = [
+      ...new Set(out.allowedIntentActions.map((a) => a.toLowerCase())),
+    ];
   }
 
   return out;

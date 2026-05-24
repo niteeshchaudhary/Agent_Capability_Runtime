@@ -22,7 +22,9 @@ export async function delegateCapability(
   options: DelegateOptions,
 ): Promise<GrantCapabilityResult> {
   const parentResult = await validateCapability(parentToken, {
+    signingMaterial: options.signingMaterial,
     secret: options.secret,
+    algorithm: options.algorithm,
     issuer: options.issuer,
     expectedTool: input.tool,
   });

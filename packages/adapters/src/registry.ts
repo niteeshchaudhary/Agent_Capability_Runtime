@@ -1,5 +1,9 @@
 import type { ToolId } from "@acr/capability-token";
 import {
+  getAdapterCapabilities,
+  type AdapterCapabilityDescriptor,
+} from "./capabilities.js";
+import {
   type AdapterConfig,
   loadAdapterConfigFromEnv,
   resolveAdapterConfig,
@@ -15,6 +19,7 @@ import type { ToolAdapter } from "./types.js";
 export interface AdapterRegistry {
   get(tool: ToolId): ToolAdapter;
   list(): ToolId[];
+  supportedCapabilities(tool?: ToolId): AdapterCapabilityDescriptor[];
   config: ResolvedAdapterConfig;
 }
 
@@ -46,6 +51,9 @@ function buildRegistry(resolved: ResolvedAdapterConfig): AdapterRegistry {
     },
     list() {
       return Object.keys(adapters) as ToolId[];
+    },
+    supportedCapabilities(tool?: ToolId) {
+      return getAdapterCapabilities(tool);
     },
   };
 }

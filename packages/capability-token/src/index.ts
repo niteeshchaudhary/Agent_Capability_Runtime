@@ -8,6 +8,7 @@ export { grantCapability } from "./grant.js";
 export {
   capabilityTokenClaimsSchema,
   constraintSetSchema,
+  executionIntentSchema,
   grantCapabilityInputSchema,
   jwtConstraintSetSchema,
   toolIdSchema,
@@ -32,4 +33,23 @@ export {
   type ValidationSuccess,
   type ValidatorOptions,
 } from "./types.js";
+export {
+  executionIntentFromMetadata,
+  executionIntentKey,
+  normalizeExecutionIntent,
+} from "./intent.js";
+export type { ExecutionIntent } from "./types.js";
 export { decodeCapability, validateCapability } from "./validate.js";
+export {
+  createHs256SigningMaterial,
+  loadSigningConfigFromEnv,
+  prepareSigningMaterial,
+  resolveSigningConfig,
+  toSignerOptions,
+  toValidatorOptions,
+} from "./signing-config.js";
+export type {
+  CapabilitySigningAlgorithm,
+  SigningConfig,
+  SigningMaterial,
+} from "./signing-config.js";

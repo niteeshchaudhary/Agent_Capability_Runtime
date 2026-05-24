@@ -99,6 +99,28 @@ export function assertConstraintSubset(
     });
   }
 
+  if (parent.allowedIntentCategories?.length && child.allowedIntentCategories?.length) {
+    const parentSet = new Set(parent.allowedIntentCategories.map((c) => c.toLowerCase()));
+    const childOk = child.allowedIntentCategories.every((c) => parentSet.has(c.toLowerCase()));
+    if (!childOk) {
+      violations.push({
+        field: "allowedIntentCategories",
+        message: "child allowedIntentCategories must be a subset of parent",
+      });
+    }
+  }
+
+  if (parent.allowedIntentActions?.length && child.allowedIntentActions?.length) {
+    const parentSet = new Set(parent.allowedIntentActions.map((a) => a.toLowerCase()));
+    const childOk = child.allowedIntentActions.every((a) => parentSet.has(a.toLowerCase()));
+    if (!childOk) {
+      violations.push({
+        field: "allowedIntentActions",
+        message: "child allowedIntentActions must be a subset of parent",
+      });
+    }
+  }
+
   return violations;
 }
 

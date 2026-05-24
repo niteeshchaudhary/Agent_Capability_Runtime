@@ -18,6 +18,9 @@ export interface ExecutionContext {
   payload: Record<string, unknown>;
   simulate: boolean;
   requestId?: string;
+  traceId?: string;
+  sessionId?: string;
+  policyVersionId?: string;
 }
 
 export interface ExecutionContract {

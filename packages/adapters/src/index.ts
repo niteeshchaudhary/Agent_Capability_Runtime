@@ -7,6 +7,12 @@ export {
   type ResolvedAdapterConfig,
   type SlackCredentials,
 } from "./config.js";
+export {
+  ADAPTER_CAPABILITIES,
+  getAdapterCapabilities,
+  supportedCapabilities,
+  type AdapterCapabilityDescriptor,
+} from "./capabilities.js";
 export { buildGmailRawMessage } from "./gmail-mime.js";
 export { createGmailLiveAdapter } from "./gmail-live.js";
 export { gmailStubAdapter } from "./gmail-stub.js";

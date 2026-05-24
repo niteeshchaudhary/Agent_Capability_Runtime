@@ -1,3 +1,7 @@
+import type { CapabilitySigningAlgorithm, SigningMaterial } from "./signing-config.js";
+
+export type { CapabilitySigningAlgorithm, SigningConfig, SigningMaterial } from "./signing-config.js";
+
 /** Supported tool identifiers in ACR v1 */
 export type ToolId = "gmail.send" | "slack.send" | "http.request";
 
@@ -13,6 +17,12 @@ export interface AllowedHours {
   end: number;
 }
 
+/** Semantic execution intent — why an action is performed (agent-native governance). */
+export interface ExecutionIntent {
+  category: string;
+  action?: string;
+}
+
 /** Runtime constraint set (SDK camelCase) */
 export interface ConstraintSet {
   allowedDomains?: string[];
@@ -24,6 +34,10 @@ export interface ConstraintSet {
   allowedHours?: AllowedHours;
   approvalRequired?: boolean;
   approvalRequiredIfExternal?: boolean;
+  /** Allowed intent categories for execute (semantic governance) */
+  allowedIntentCategories?: string[];
+  /** When set, execute intent.action must be one of these (requires category match) */
+  allowedIntentActions?: string[];
 }
 
 /** JWT payload shape (snake_case in token) */
@@ -58,6 +72,8 @@ export interface JwtConstraintSet {
   allowed_hours?: AllowedHours;
   approval_required?: boolean;
   approval_required_if_external?: boolean;
+  allowed_intent_categories?: string[];
+  allowed_intent_actions?: string[];
 }
 
 /** Lineage fields for transitive delegation (v1 foundation) */
@@ -75,8 +91,8 @@ export interface GrantCapabilityInput {
   delegator?: string;
   session?: string;
   task?: string;
-  /** Human-readable intent label (e.g. "support_response") for future intent-aware policy */
-  intent?: string;
+  /** Semantic intent label at grant time (stored in metadata.intent) */
+  intent?: ExecutionIntent | string;
   metadata?: Record<string, unknown>;
   issuer?: string;
   /** Delegation: parent capability jti */
@@ -86,13 +102,18 @@ export interface GrantCapabilityInput {
 }
 
 export interface SignerOptions {
-  /** HMAC secret (HS256) — min 32 chars recommended */
-  secret: string;
+  /** @deprecated Prefer `signingMaterial` — HS256 shared secret */
+  secret?: string;
+  algorithm?: CapabilitySigningAlgorithm;
+  signingMaterial?: SigningMaterial;
   issuer?: string;
 }
 
 export interface ValidatorOptions {
-  secret: string;
+  /** @deprecated Prefer `signingMaterial` — HS256 shared secret */
+  secret?: string;
+  algorithm?: CapabilitySigningAlgorithm;
+  signingMaterial?: SigningMaterial;
   issuer?: string;
   expectedTool?: ToolId;
   /** Reject tokens whose exp is within this many seconds (clock skew buffer) */

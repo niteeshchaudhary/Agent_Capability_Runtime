@@ -74,4 +74,6 @@ Protocol-oriented products gain leverage from:
 | [policy-dsl.md](../policy-dsl.md) | Fluent DSL (compiles to RFC-0002 AST) |
 | [runtime-api.md](../runtime-api.md) | HTTP transport (informative) |
 | [audit-and-approvals.md](../audit-and-approvals.md) | Setup guide → RFC-0002, RFC-0003 |
-| [THREAT_MODEL.md](../../THREAT_MODEL.md) | Security assumptions and threats |
+| [THREAT_MODEL.md](../THREAT_MODEL.md) | Security assumptions and threats |
+| [SECURITY_ASSUMPTIONS.md](../SECURITY_ASSUMPTIONS.md) | Deployment trust boundaries |
+| [CONCEPTS.md](../CONCEPTS.md) | Identity vs capability vs session vs intent |

@@ -1,4 +1,5 @@
 import type { ToolId } from "@acr/capability-token";
+import type { ExecutionIntent } from "@acr/capability-token";
 import type { PolicyCondition, PolicyDocument, PolicyNode } from "./ast.js";
 import { isAndNode, isConditionNode } from "./ast.js";
 
@@ -20,7 +21,8 @@ export interface AstEvaluationContext {
   nowUtcHour?: number;
   /** When true, never return DENY for consumption — only report what would happen */
   simulate?: boolean;
-  intent?: string;
+  /** Semantic execution intent (category + optional action) */
+  intent?: ExecutionIntent;
 }
 
 export interface AstEvaluationResult {
@@ -142,6 +144,48 @@ function evaluateCondition(
         if (!ok) {
           return fail("DENY", `URL not in allowed_urls: ${url}`, condition.kind);
         }
+      }
+      return pass(condition.kind);
+    }
+
+    case "intent_category": {
+      const categories = (condition.params?.categories as string[]) ?? [];
+      if (categories.length === 0) return pass(condition.kind);
+      if (!ctx.intent) {
+        return fail(
+          "DENY",
+          "execution intent required (category) but not provided",
+          condition.kind,
+        );
+      }
+      const category = ctx.intent.category.toLowerCase();
+      if (!categories.includes(category)) {
+        return fail(
+          "DENY",
+          `intent category not allowed: ${ctx.intent.category} (allowed: ${categories.join(", ")})`,
+          condition.kind,
+        );
+      }
+      return pass(condition.kind);
+    }
+
+    case "intent_action": {
+      const actions = (condition.params?.actions as string[]) ?? [];
+      if (actions.length === 0) return pass(condition.kind);
+      if (!ctx.intent?.action) {
+        return fail(
+          "DENY",
+          "execution intent action required but not provided",
+          condition.kind,
+        );
+      }
+      const action = ctx.intent.action.toLowerCase();
+      if (!actions.includes(action)) {
+        return fail(
+          "DENY",
+          `intent action not allowed: ${ctx.intent.action} (allowed: ${actions.join(", ")})`,
+          condition.kind,
+        );
       }
       return pass(condition.kind);
     }

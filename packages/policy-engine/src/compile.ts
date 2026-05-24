@@ -26,6 +26,24 @@ export function compilePolicy(tool: ToolId, constraints: ConstraintSet): PolicyD
     conditions.push({ kind: "approval_required" });
   }
 
+  if (constraints.allowedIntentCategories?.length) {
+    conditions.push({
+      kind: "intent_category",
+      params: {
+        categories: constraints.allowedIntentCategories.map((c) => c.toLowerCase()),
+      },
+    });
+  }
+
+  if (constraints.allowedIntentActions?.length) {
+    conditions.push({
+      kind: "intent_action",
+      params: {
+        actions: constraints.allowedIntentActions.map((a) => a.toLowerCase()),
+      },
+    });
+  }
+
   if (tool === "gmail.send") {
     if (constraints.allowedDomains?.length) {
       if (constraints.approvalRequiredIfExternal) {

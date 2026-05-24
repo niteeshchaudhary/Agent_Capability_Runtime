@@ -7,7 +7,12 @@ export type {
   PolicyNode,
   PolicyCondition,
 } from "./evaluate.js";
-export { can, domain, method, url, hours, PolicyBuilder } from "./dsl/index.js";
+export {
+  computePolicyVersionId,
+  compilePolicyVersioned,
+  PolicyVersionRegistry,
+} from "./policy-version.js";
+export { can, domain, method, url, hours, intent, PolicyBuilder } from "./dsl/index.js";
 export type {
   DomainInPredicate,
   HoursBetweenPredicate,

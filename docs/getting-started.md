@@ -100,7 +100,20 @@ Install the optional peer dependency in your deployment:
 npm install redis
 ```
 
-## 5. Approvals
+## 5. Distributed revocation (optional Redis)
+
+Revocation defaults to **in-memory** — no Redis required for local or single-instance use.
+
+For multiple gateway replicas, opt in to a shared revocation list:
+
+```bash
+ACR_REVOCATION_MODE=redis
+ACR_REDIS_URL=redis://localhost:6379
+```
+
+See [distributed-revocation.md](./distributed-revocation.md).
+
+## 6. Approvals
 
 When a constraint requires human approval:
 
@@ -110,7 +123,7 @@ npx pnpm@9.15.0 example:approval
 
 See [audit-and-approvals.md](./audit-and-approvals.md) for the full workflow.
 
-## 6. Live Gmail / Slack
+## 7. Live Gmail / Slack
 
 Set credentials in `apps/gateway/.env` and see [adapters-setup.md](./adapters-setup.md).
 
