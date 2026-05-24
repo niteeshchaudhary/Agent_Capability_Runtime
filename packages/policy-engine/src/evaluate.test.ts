@@ -43,11 +43,24 @@ describe("evaluatePolicy", () => {
     expect(result.decision).toBe("DENY");
   });
 
-  it("allows when approval was granted externally", () => {
+  it("allows when approval_required was granted", () => {
     const result = evaluatePolicy({
       tool: "gmail.send",
       constraints: { approvalRequired: true },
       payload: { to: "a@company.com" },
+      approvalGranted: true,
+    });
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("allows external domain when approval was granted", () => {
+    const result = evaluatePolicy({
+      tool: "gmail.send",
+      constraints: {
+        allowedDomains: ["company.com"],
+        approvalRequiredIfExternal: true,
+      },
+      payload: { to: "john@gmail.com" },
       approvalGranted: true,
     });
     expect(result.decision).toBe("ALLOW");

@@ -71,16 +71,19 @@ export function evaluatePolicy(ctx: PolicyEvaluationContext): PolicyEvaluationRe
     if (domain && constraints.allowedDomains?.length) {
       const allowed = constraints.allowedDomains.map((d) => d.toLowerCase());
       if (!allowed.includes(domain)) {
-        if (constraints.approvalRequiredIfExternal && !ctx.approvalGranted) {
+        if (ctx.approvalGranted) {
+          // Human approved this external recipient; continue evaluation.
+        } else if (constraints.approvalRequiredIfExternal) {
           return {
             decision: "REQUIRE_APPROVAL",
             reason: `external domain requires approval: ${domain}`,
           };
+        } else {
+          return {
+            decision: "DENY",
+            reason: `external domain blocked: ${domain}`,
+          };
         }
-        return {
-          decision: "DENY",
-          reason: `external domain blocked: ${domain}`,
-        };
       }
     }
 

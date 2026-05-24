@@ -53,4 +53,34 @@ describe("createGmailLiveAdapter", () => {
       adapter.execute({ to: "a@b.com", subject: "S", body: "B" }),
     ).rejects.toThrow(/Insufficient Permission/);
   });
+
+  it("requires subject and rejects attachments", async () => {
+    const adapter = createGmailLiveAdapter({ accessToken: "tok" });
+    await expect(adapter.execute({ to: "a@b.com", body: "B" })).rejects.toThrow(
+      /requires payload.subject/,
+    );
+    await expect(
+      adapter.execute({
+        to: "a@b.com",
+        subject: "S",
+        body: "B",
+        attachments: [{ name: "f" }],
+      }),
+    ).rejects.toThrow(/does not support attachments/);
+  });
+
+  it("throws when API returns no message id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      }),
+    );
+    const adapter = createGmailLiveAdapter({ accessToken: "tok" });
+    await expect(
+      adapter.execute({ to: "a@b.com", subject: "S", body: "B" }),
+    ).rejects.toThrow(/no message id/);
+  });
 });

@@ -2,6 +2,7 @@
   "name": "@acr/adapters",
   "version": "0.1.0",
   "description": "Tool adapters for Agent Capability Runtime",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +13,18 @@
     }
   },
   "files": ["dist"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-capability-runtime/Agent_Capability_Runtime.git",
+    "directory": "packages/adapters"
+  },
+  "homepage": "https://github.com/agent-capability-runtime/Agent_Capability_Runtime#readme",
+  "bugs": {
+    "url": "https://github.com/agent-capability-runtime/Agent_Capability_Runtime/issues"
+  },
+  "keywords": ["ai-agents", "gmail", "slack", "mcp", "adapters"],
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

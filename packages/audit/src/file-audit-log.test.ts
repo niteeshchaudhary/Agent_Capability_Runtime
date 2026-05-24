@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { FileAuditLog } from "./file-audit-log.js";
@@ -31,5 +31,17 @@ describe("FileAuditLog", () => {
 
     expect(log.list({ agentId: "a2" })).toHaveLength(1);
     expect(log.list({ decision: "DENY" })[0]?.reason).toBe("blocked");
+  });
+
+  it("skips corrupt JSONL lines on reload", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acr-audit-"));
+    const filePath = join(dir, "audit.jsonl");
+    writeFileSync(
+      filePath,
+      '{"id":"aud_ok","agentId":"a","tool":"t","decision":"ALLOW","timestamp":"2026-05-24T10:00:00.000Z"}\nNOT JSON\n',
+      "utf8",
+    );
+    const log = new FileAuditLog(filePath);
+    expect(log.list()).toHaveLength(1);
   });
 });

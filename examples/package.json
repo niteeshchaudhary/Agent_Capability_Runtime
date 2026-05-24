@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "tsx e2e-local.ts"
+    "e2e": "tsx e2e-local.ts",
+    "approval": "tsx e2e-approval.ts",
+    "demo": "tsx demo.ts",
+    "demo:http": "tsx demo-http.ts"
   },
   "dependencies": {
     "@acr/sdk": "workspace:*"

@@ -15,5 +15,6 @@
     "noImplicitOverride": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true
-  }
+  },
+  "exclude": ["**/*.test.ts"]
 }

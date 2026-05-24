@@ -1,15 +1,29 @@
 {
   "name": "agent-capability-runtime",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Runtime-native authorization and governance layer for AI agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-capability-runtime/Agent_Capability_Runtime.git"
+  },
+  "homepage": "https://github.com/agent-capability-runtime/Agent_Capability_Runtime#readme",
+  "bugs": {
+    "url": "https://github.com/agent-capability-runtime/Agent_Capability_Runtime/issues"
+  },
+  "keywords": ["ai-agents", "authorization", "capability-token", "runtime", "governance"],
   "scripts": {
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
     "example:token": "pnpm --filter @acr/capability-token run example",
     "example:e2e": "pnpm --filter @acr/examples run e2e",
-    "dev:gateway": "pnpm --filter @acr/gateway run dev"
+    "example:approval": "pnpm --filter @acr/examples run approval",
+    "demo": "pnpm --filter @acr/examples run demo",
+    "demo:http": "pnpm --filter @acr/examples run demo:http",
+    "dev:gateway": "pnpm --filter @acr/gateway run dev",
+    "publish:packages": "pnpm build && pnpm -r --filter './packages/*' publish --access public --no-git-checks"
   },
   "engines": {
     "node": ">=20"
