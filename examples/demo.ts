@@ -21,7 +21,14 @@ const SECRET =
 
 function asOutcome(result: ExecuteResult) {
   if (result.ok) {
-    return { ok: true as const, result: result.result };
+    return {
+      ok: true as const,
+      decision: result.decision,
+      result: "result" in result ? result.result : undefined,
+      reason: "reason" in result ? result.reason : undefined,
+      evaluatedConditions:
+        "evaluatedConditions" in result ? result.evaluatedConditions : undefined,
+    };
   }
   return {
     ok: false as const,
@@ -38,6 +45,7 @@ async function main() {
     colors.dim(
       "  This demo shows how ACR issues short-lived capability tokens,\n" +
         "  enforces policy at execution time, pauses for human approval,\n" +
+        "  simulates policy without side effects, delegates authority across agents,\n" +
         "  and records every decision in an audit log.\n",
     ),
   );
@@ -202,7 +210,7 @@ async function main() {
 
   const runtime = client.getRuntime()!;
   const jti = claims.jti;
-  console.log(colors.dim(`   Actions used so far: ${runtime.actions.get(jti)} / 3`));
+  console.log(colors.dim(`   Actions used so far: ${await runtime.actions.get(jti)} / 3`));
 
   const allow2 = await client.execute({
     token,
@@ -210,7 +218,7 @@ async function main() {
     payload: { to: "carol@company.com", subject: "Update", body: "Status update." },
   });
   logDecision("Send #2", asOutcome(allow2));
-  console.log(colors.dim(`   Actions used: ${runtime.actions.get(jti)} / 3`));
+  console.log(colors.dim(`   Actions used: ${await runtime.actions.get(jti)} / 3`));
 
   const allow3 = await client.execute({
     token,
@@ -218,7 +226,7 @@ async function main() {
     payload: { to: "dave@company.com", subject: "Third", body: "Last allowed send." },
   });
   logDecision("Send #3", asOutcome(allow3));
-  console.log(colors.dim(`   Actions used: ${runtime.actions.get(jti)} / 3`));
+  console.log(colors.dim(`   Actions used: ${await runtime.actions.get(jti)} / 3`));
 
   const overLimit = await client.execute({
     token,
@@ -248,19 +256,107 @@ async function main() {
 
   await pause();
 
-  // ── Step 7: Audit ─────────────────────────────────────────────────────
-  section(7, "Audit trail", "Every allow / deny / approval is recorded");
+  // ── Step 7: SIMULATE ──────────────────────────────────────────────────
+  section(
+    7,
+    "Policy simulation (SIMULATE)",
+    "Evaluate policy without sending email — enterprise dry-run",
+  );
+
+  const simulated = await client.execute({
+    token,
+    tool: "gmail.send",
+    payload: { to: "alice@company.com", subject: "Dry run", body: "No send." },
+    simulate: true,
+  });
+  logDecision("Simulate send", asOutcome(simulated));
+  console.log(colors.dim(`   Consumption unchanged: ${await runtime.consumption.get(jti)} / 3`));
+
+  await pause();
+
+  // ── Step 8: Delegation chain ──────────────────────────────────────────
+  section(
+    8,
+    "Delegation chain",
+    "Planner agent delegates narrower capability to executor agent",
+  );
+
+  const planner = await client.grant({
+    agentId: "demo_planner_agent",
+    tool: "gmail.send",
+    constraints: {
+      allowedDomains: ["company.com", "partner.com"],
+      maxActions: 10,
+    },
+    delegator: "demo_user_42",
+  });
+
+  const childGrant = await client.delegate(planner.token, {
+    agentId: "demo_executor_agent",
+    tool: "gmail.send",
+    constraints: {
+      allowedDomains: ["company.com"],
+      maxActions: 2,
+    },
+    delegator: "demo_planner_agent",
+  });
+
+  console.log(colors.ok("   ✓ Child token issued"));
+  console.log(colors.dim(`     parent_jti: ${childGrant.claims.parent_jti}`));
+  console.log(colors.dim(`     depth:      ${childGrant.claims.delegation_depth}`));
+  console.log(colors.dim(`     chain:      ${childGrant.claims.delegator_chain?.join(" → ")}`));
+
+  const delegatedSend = await client.execute({
+    token: childGrant.token,
+    tool: "gmail.send",
+    payload: { to: "team@company.com", subject: "Delegated", body: "From executor." },
+    intent: "support_response",
+    requestId: "demo_req_delegated_1",
+  });
+  logDecision("Delegated send", asOutcome(delegatedSend));
+
+  await pause();
+
+  // ── Step 9: Idempotent replay ─────────────────────────────────────────
+  section(
+    9,
+    "Idempotent requestId",
+    "Same requestId twice — second call is replay, not double consumption",
+  );
+
+  const idem = await client.execute({
+    token: childGrant.token,
+    tool: "gmail.send",
+    payload: { to: "team@company.com", subject: "Replay", body: "Same request." },
+    requestId: "demo_idempotent_xyz",
+  });
+  logDecision("First requestId", asOutcome(idem));
+
+  const replay = await client.execute({
+    token: childGrant.token,
+    tool: "gmail.send",
+    payload: { to: "team@company.com", subject: "Replay", body: "Same request." },
+    requestId: "demo_idempotent_xyz",
+  });
+  logDecision("Replay same requestId", asOutcome(replay));
+
+  await pause();
+
+  // ── Step 10: Audit ────────────────────────────────────────────────────
+  section(10, "Audit trail", "Policy snapshots, lineage, and decisions");
 
   const events = runtime.audit.list();
   console.log(colors.dim(`   Total events: ${events.length}\n`));
 
-  for (const event of events.slice(-8)) {
+  for (const event of events.slice(-10)) {
     const icon =
       event.decision === "ALLOW"
         ? colors.ok("✓")
-        : event.decision === "REQUIRE_APPROVAL"
-          ? colors.warn("⏸")
-          : colors.deny("✗");
+        : event.decision === "SIMULATE"
+          ? colors.warn("◆")
+          : event.decision === "REQUIRE_APPROVAL"
+            ? colors.warn("⏸")
+            : colors.deny("✗");
     const line = `${icon} ${event.decision.padEnd(18)} ${event.tool.padEnd(12)} agent=${event.agentId}`;
     console.log(`   ${line}`);
     if (event.reason) console.log(colors.dim(`       → ${event.reason}`));

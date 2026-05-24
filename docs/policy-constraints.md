@@ -1,6 +1,8 @@
 # Policy Constraints (v1)
 
-Constraints are the **core authorization primitive** in ACR. They travel inside capability tokens and are evaluated at runtime against each tool invocation.
+> **Normative:** [RFC-0001 §6](./rfc/RFC-0001-capability-token.md) (encoding), [RFC-0002 §5](./rfc/RFC-0002-runtime-execution.md) (evaluation)
+
+Constraints are the **core authorization primitive** in ACR.
 
 ## ConstraintSet schema
 

@@ -49,7 +49,15 @@ export async function grantCapability(
   if (parsed.delegator !== undefined) claims.delegator = parsed.delegator;
   if (parsed.session !== undefined) claims.session = parsed.session;
   if (parsed.task !== undefined) claims.task = parsed.task;
-  if (parsed.metadata !== undefined) claims.metadata = parsed.metadata;
+  if (parsed.intent !== undefined) {
+    claims.metadata = { ...claims.metadata, intent: parsed.intent };
+  }
+  if (parsed.metadata !== undefined) {
+    claims.metadata = { ...claims.metadata, ...parsed.metadata };
+  }
+  if (parsed.parentJti !== undefined) claims.parent_jti = parsed.parentJti;
+  if (parsed.delegationDepth !== undefined) claims.delegation_depth = parsed.delegationDepth;
+  if (parsed.delegatorChain !== undefined) claims.delegator_chain = parsed.delegatorChain;
 
   const payload: JWTPayload = { ...claims };
 

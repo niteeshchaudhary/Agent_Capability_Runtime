@@ -107,6 +107,20 @@ Gmail and Slack adapters can call real APIs when credentials are configured. See
 
 [agent-identity-auth-synthesis.md](./agent-identity-auth-synthesis.md) synthesizes six papers on agent identity and auth (DID/VC, A-JWT, OIDC-A, IETF AIMS, etc.) and informed this design.
 
+### Protocol specifications (RFC v1.0 Stable)
+
+Normative specs define interoperability and shared terminology ([STABLE release notes](./docs/rfc/STABLE.md)):
+
+| RFC | Title |
+|-----|-------|
+| [RFC-0001](./docs/rfc/RFC-0001-capability-token.md) | **Capability Token** — JWT profile, claims, delegation |
+| [RFC-0002](./docs/rfc/RFC-0002-runtime-execution.md) | **Runtime Execution** — policy decisions, consumption, approvals |
+| [RFC-0003](./docs/rfc/RFC-0003-audit-lineage.md) | **Audit Lineage** — events, snapshots, correlation |
+| [RFC-0004](./docs/rfc/RFC-0004-distributed-consumption.md) | **Distributed Consumption** — Redis ledger for scale-out |
+| [RFC-0005](./docs/rfc/RFC-0005-admin-authentication.md) | **Admin Auth** — protect grant/delegate |
+
+See [docs/rfc/STABLE.md](./docs/rfc/STABLE.md) and [docs/rfc/README.md](./docs/rfc/README.md) for the v1.0 protocol release.
+
 ---
 
 ## Live demo
@@ -345,12 +359,23 @@ Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 | Doc | Description |
 |-----|-------------|
+| [RFC-0001: Capability Token](./docs/rfc/RFC-0001-capability-token.md) | **Normative** JWT spec |
+| [RFC-0002: Runtime Execution](./docs/rfc/RFC-0002-runtime-execution.md) | **Normative** execute, policy, consumption |
+| [RFC-0003: Audit Lineage](./docs/rfc/RFC-0003-audit-lineage.md) | **Normative** audit events |
+| [RFC-0004: Distributed Consumption](./docs/rfc/RFC-0004-distributed-consumption.md) | **Normative** Redis / shared ledger |
+| [RFC-0005: Admin Authentication](./docs/rfc/RFC-0005-admin-authentication.md) | **Normative** grant/delegate protection |
+| [RFC v1.0 Stable](./docs/rfc/STABLE.md) | Conformance checklist and promotion record |
+| [RFC index](./docs/rfc/README.md) | All RFCs and reading order |
 | [Getting started](./docs/getting-started.md) | Step-by-step setup |
-| [Capability token spec](./docs/capability-token-spec.md) | JWT claims and signing |
+| [Capability token spec](./docs/capability-token-spec.md) | Developer summary (links to RFC-0001) |
 | [Runtime API](./docs/runtime-api.md) | HTTP endpoints |
 | [Policy constraints](./docs/policy-constraints.md) | Constraint reference |
+| [Policy DSL](./docs/policy-dsl.md) | Fluent `can("tool").where(...)` API |
 | [Adapter setup](./docs/adapters-setup.md) | Gmail & Slack credentials |
 | [Audit & approvals](./docs/audit-and-approvals.md) | Persistence and workflows |
+| [Threat model](./THREAT_MODEL.md) | Security threats and mitigations |
+| [Policy AST](./docs/policy-ast.md) | Normalized policy compilation |
+| [Gap tracker](./gap-fix.md) | Architecture gaps addressed |
 | [Docs index](./docs/README.md) | Full list |
 | [Blueprint](./Blueprint.md) | Product architecture |
 | [Changelog](./CHANGELOG.md) | Release notes |

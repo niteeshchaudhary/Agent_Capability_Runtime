@@ -53,8 +53,12 @@ export const grantCapabilityInputSchema = z
     delegator: z.string().min(1).optional(),
     session: z.string().min(1).optional(),
     task: z.string().min(1).optional(),
+    intent: z.string().min(1).optional(),
     metadata: z.record(z.unknown()).optional(),
     issuer: z.string().min(1).optional(),
+    parentJti: z.string().regex(/^cap_[0-9a-f-]{36}$/).optional(),
+    delegationDepth: z.number().int().min(0).max(16).optional(),
+    delegatorChain: z.array(z.string().min(1)).optional(),
   })
   .strict();
 
@@ -71,6 +75,9 @@ export const capabilityTokenClaimsSchema = z
     iat: z.number().int().positive(),
     exp: z.number().int().positive(),
     jti: z.string().regex(/^cap_[0-9a-f-]{36}$/),
+    parent_jti: z.string().regex(/^cap_[0-9a-f-]{36}$/).optional(),
+    delegation_depth: z.number().int().min(0).max(16).optional(),
+    delegator_chain: z.array(z.string().min(1)).optional(),
   })
   .strict()
   .refine((c) => c.exp > c.iat, { message: "exp must be after iat" });

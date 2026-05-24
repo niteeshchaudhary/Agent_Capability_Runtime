@@ -1,32 +1,37 @@
 import type { AdapterConfig } from "@acr/adapters";
 import type {
   CapabilityTokenClaims,
+  ConstraintSet,
   GrantCapabilityInput,
   GrantCapabilityResult,
   ToolId,
 } from "@acr/capability-token";
 import type { RuntimeDecision } from "@acr/policy-engine";
+import type { ConsumptionConfig } from "./consumption/types.js";
 import type { ApprovalHook } from "./approval-store.js";
 
 export interface RuntimeConfig {
   secret: string;
   issuer?: string;
-  /** Adapter credentials and mode (defaults to stub when unset in tests) */
   adapters?: AdapterConfig;
-  /** Persistent audit store path (JSONL). Omit for in-memory. */
   auditPath?: string;
-  /** Persistent approval store path (JSON). Omit for in-memory. */
   approvalPath?: string;
-  /** Invoked when execution pauses for human approval */
   onApprovalRequired?: ApprovalHook;
+  /** Consumption ledger: in-memory (default) or Redis for multi-instance gateways */
+  consumption?: ConsumptionConfig;
 }
 
 export interface ExecuteInput {
   token: string;
   tool: ToolId;
   payload: Record<string, unknown>;
-  /** Resume execution after POST /approvals/:id/approve */
   approvalId?: string;
+  /** Idempotency key — prevents double execution / double consumption */
+  requestId?: string;
+  /** Intent label for future intent-aware policy (e.g. "support_response") */
+  intent?: string;
+  /** Policy simulation only — no adapter execution */
+  simulate?: boolean;
 }
 
 export interface ExecuteSuccess {
@@ -35,6 +40,15 @@ export interface ExecuteSuccess {
   result: unknown;
   auditId: string;
   claims: CapabilityTokenClaims;
+}
+
+export interface ExecuteSimulated {
+  ok: true;
+  decision: "SIMULATE";
+  reason?: string;
+  auditId: string;
+  claims: CapabilityTokenClaims;
+  evaluatedConditions?: { kind: string; passed: boolean; reason?: string }[];
 }
 
 export interface ExecuteDenied {
@@ -53,6 +67,10 @@ export interface ExecuteApprovalRequired {
   approvalId: string;
 }
 
-export type ExecuteResult = ExecuteSuccess | ExecuteDenied | ExecuteApprovalRequired;
+export type ExecuteResult =
+  | ExecuteSuccess
+  | ExecuteSimulated
+  | ExecuteDenied
+  | ExecuteApprovalRequired;
 
-export type { GrantCapabilityInput, GrantCapabilityResult, RuntimeDecision, ToolId };
+export type { GrantCapabilityInput, GrantCapabilityResult, RuntimeDecision, ToolId, ConstraintSet };

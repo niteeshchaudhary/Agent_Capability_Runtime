@@ -1,5 +1,9 @@
+export { assertConstraintSubset, assertConstraintSubsetFromClaims } from "./constraint-subset.js";
+export type { ConstraintSubsetViolation } from "./constraint-subset.js";
 export { constraintsFromJwt, constraintsToJwt } from "./constraints-mapper.js";
 export { createTokenId, parseExpiresIn } from "./duration.js";
+export { delegateCapability } from "./delegate.js";
+export type { DelegateCapabilityInput, DelegateOptions } from "./delegate.js";
 export { grantCapability } from "./grant.js";
 export {
   capabilityTokenClaimsSchema,
@@ -16,6 +20,7 @@ export {
   type AllowedHours,
   type CapabilityTokenClaims,
   type ConstraintSet,
+  type DelegationLineage,
   type GrantCapabilityInput,
   type GrantCapabilityResult,
   type JwtConstraintSet,

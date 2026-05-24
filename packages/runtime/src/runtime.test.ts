@@ -96,7 +96,7 @@ describe("AgentCapabilityRuntime", () => {
       secret: SECRET,
       adapters: { mode: "stub" },
     });
-    const { token } = await rt.grant({
+    const { token, claims } = await rt.grant({
       agentId: "agent_audit",
       tool: "slack.send",
       constraints: { maxActions: 10 },
@@ -109,6 +109,7 @@ describe("AgentCapabilityRuntime", () => {
     });
 
     expect(rt.audit.list().length).toBeGreaterThanOrEqual(1);
+    expect(await rt.consumption.get(claims.jti)).toBeGreaterThanOrEqual(1);
     expect(rt.audit.list()[0]?.agentId).toBe("agent_audit");
   });
 });

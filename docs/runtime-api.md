@@ -2,9 +2,17 @@
 
 HTTP API for the Agent Capability Runtime gateway. Implemented in `apps/gateway` (Hono). Start with `pnpm dev:gateway`.
 
+**Normative (Stable 1.0.0):** [RFC-0001](./rfc/RFC-0001-capability-token.md) · [RFC-0002](./rfc/RFC-0002-runtime-execution.md) · [RFC-0005](./rfc/RFC-0005-admin-authentication.md)
+
 Base URL: `https://runtime.example.com/v1` (self-hosted or cloud)
 
-Authentication (gateway admin): `Authorization: Bearer <admin_api_key>` for grant endpoints in hosted mode. Self-hosted dev mode may omit admin auth initially.
+**Admin authentication (RFC-0005):** When `ACR_ADMIN_API_KEY` or `ACR_ADMIN_API_KEYS` is set, grant and delegate require:
+
+```
+Authorization: Bearer <admin_api_key>
+```
+
+If no admin key is configured, grant/delegate are open (development only; gateway logs a warning).
 
 ---
 
@@ -13,6 +21,8 @@ Authentication (gateway admin): `Authorization: Bearer <admin_api_key>` for gran
 Issue a signed capability token for an agent and tool.
 
 ### Request
+
+**Headers (when admin auth enabled):** `Authorization: Bearer <admin_api_key>`
 
 ```json
 {
@@ -76,6 +86,52 @@ Issue a signed capability token for an agent and tool.
 
 ---
 
+## POST /capabilities/delegate
+
+Issue a child capability token derived from a parent token. Child constraints must be a **subset** of the parent (narrower domains, lower `maxActions`, etc.). JWT includes `parent_jti`, `delegation_depth`, and `delegator_chain`.
+
+### Request
+
+```json
+{
+  "parentToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "agentId": "agent_child",
+  "tool": "gmail.send",
+  "constraints": {
+    "allowedDomains": ["company.com"],
+    "maxActions": 2
+  },
+  "expiresIn": "15m",
+  "delegator": "user_42",
+  "intent": "delegate_to_subagent"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `parentToken` | string | Yes | Parent capability JWT |
+| `agentId` | string | Yes | Child agent identity |
+| `tool` | string | Yes | Must match parent tool |
+| `constraints` | ConstraintSet | Yes | Subset of parent constraints |
+| `expiresIn` | string \| number | No | Cannot exceed parent `exp` |
+| `delegator` | string | No | Who performed the delegation |
+| `session` | string | No | Session binding |
+| `task` | string | No | Task label |
+| `intent` | string | No | Human-readable intent label |
+| `metadata` | object | No | Opaque metadata |
+
+### Response `201 Created`
+
+Same shape as [POST /capabilities/grant](#post-capabilitiesgrant), with delegation claims on `claims` (`parent_jti`, `delegation_depth`, `delegator_chain`).
+
+### Errors
+
+| Status | Code | Description |
+|--------|------|-------------|
+| 400 | `invalid_request` | Malformed body, expired parent, or constraints not a subset |
+
+---
+
 ## POST /runtime/execute
 
 Execute a tool through the runtime gateway with policy enforcement.
@@ -90,7 +146,11 @@ Execute a tool through the runtime gateway with policy enforcement.
     "to": "user@company.com",
     "subject": "Hello",
     "body": "Message body"
-  }
+  },
+  "approvalId": "appr_789",
+  "requestId": "req_uuid_v4",
+  "intent": "reply_to_customer",
+  "simulate": false
 }
 ```
 
@@ -99,7 +159,10 @@ Execute a tool through the runtime gateway with policy enforcement.
 | `token` | string | Yes | Capability JWT |
 | `tool` | string | Yes | Must match token `tool` claim |
 | `payload` | object | Yes | Tool-specific input |
-| `approvalId` | string | No | Resume after human approval (Week 3) |
+| `approvalId` | string | No | Resume after human approval |
+| `requestId` | string | No | Idempotency key; replays return the same outcome without double consumption |
+| `intent` | string | No | Execution intent label (audit + metadata) |
+| `simulate` | boolean | No | If `true`, evaluate policy only (`SIMULATE`); no adapter call |
 
 ### Response `200 OK` (allowed)
 
@@ -134,6 +197,19 @@ Execute a tool through the runtime gateway with policy enforcement.
 }
 ```
 
+### Response `200 OK` (simulated)
+
+When `simulate: true` and policy would allow:
+
+```json
+{
+  "decision": "SIMULATE",
+  "reason": "policy would allow execution",
+  "auditId": "aud_sim_1",
+  "evaluatedConditions": []
+}
+```
+
 ### Errors
 
 | Status | Code | Description |
@@ -162,6 +238,7 @@ Liveness check.
 | `ALLOW` | Execute tool adapter |
 | `DENY` | Block execution; return reason |
 | `REQUIRE_APPROVAL` | Pause until human approves; resume with `approvalId` |
+| `SIMULATE` | Policy check only (`simulate: true`); includes `evaluatedConditions` |
 | `REDACT` | Execute with sanitized payload (future) |
 | `SANDBOX` | Execute in isolated environment (future) |
 
@@ -170,16 +247,42 @@ Liveness check.
 ## SDK mapping
 
 ```ts
-import { grantCapability, validateCapability } from "@acr/capability-token";
+import { AcrClient } from "@acr/sdk";
 
-// Grant (maps to POST /capabilities/grant)
-const { token } = await grantCapability(options, signerOptions);
+const client = new AcrClient({
+  baseUrl: "http://localhost:3000",
+  // or local: { secret, adapters: { mode: "stub" } },
+});
 
-// Validate before execute (gateway internal)
-const validation = await validateCapability(token, { ...options, expectedTool: tool });
+const { token } = await client.grant({
+  agentId: "agent_1",
+  tool: "gmail.send",
+  constraints: { allowedDomains: ["company.com"], maxActions: 5 },
+});
+
+const child = await client.delegate(token, {
+  agentId: "agent_child",
+  tool: "gmail.send",
+  constraints: { allowedDomains: ["company.com"], maxActions: 2 },
+});
+
+const dryRun = await client.execute({
+  token: child.token,
+  tool: "gmail.send",
+  payload: { to: "user@company.com", subject: "Hi" },
+  simulate: true,
+});
+
+const result = await client.execute({
+  token: child.token,
+  tool: "gmail.send",
+  payload: { to: "user@company.com", subject: "Hi" },
+  requestId: "req_unique_id",
+  intent: "customer_reply",
+});
 ```
 
-Full `runtime.execute()` SDK ships with `@acr/runtime` in Days 4–7.
+Lower-level token helpers: `grantCapability`, `delegateCapability`, `validateCapability` from `@acr/capability-token`. In-process runtime: `AgentCapabilityRuntime` from `@acr/runtime`.
 
 ---
 

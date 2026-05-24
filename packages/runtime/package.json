@@ -36,8 +36,17 @@
     "@acr/capability-token": "workspace:*",
     "@acr/policy-engine": "workspace:*"
   },
+  "peerDependencies": {
+    "redis": "^4.7.0"
+  },
+  "peerDependenciesMeta": {
+    "redis": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "redis": "^4.7.0",
     "typescript": "^5.8.2",
     "vitest": "^3.0.9"
   }

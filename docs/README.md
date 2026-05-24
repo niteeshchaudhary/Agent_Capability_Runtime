@@ -2,14 +2,28 @@
 
 Agent Capability Runtime (ACR) — specs, API contracts, and setup guides.
 
+## Specifications (RFC v1.0 Stable)
+
+Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
+
+| RFC | Description |
+|-----|-------------|
+| [RFC index](./rfc/README.md) | RFC process and status |
+| [RFC-0001: Capability Token](./rfc/RFC-0001-capability-token.md) | JWT profile, claims, delegation, constraints |
+| [RFC-0002: Runtime Execution](./rfc/RFC-0002-runtime-execution.md) | Execute pipeline, decisions, consumption, approvals |
+| [RFC-0003: Audit Lineage](./rfc/RFC-0003-audit-lineage.md) | Audit events, lineage, correlation |
+| [RFC-0004: Distributed Consumption](./rfc/RFC-0004-distributed-consumption.md) | Redis-backed consumption store |
+| [RFC-0005: Admin Authentication](./rfc/RFC-0005-admin-authentication.md) | Bearer auth for grant/delegate |
+
 ## Getting started
 
 | Doc | Description |
 |-----|-------------|
 | [Getting started](./getting-started.md) | Install, run gateway, first grant + execute |
-| [Capability token spec](./capability-token-spec.md) | JWT claims and signing |
+| [Capability token spec](./capability-token-spec.md) | JWT claims and signing (summary; see RFC-0001) |
 | [Runtime API](./runtime-api.md) | HTTP endpoints |
 | [Policy constraints](./policy-constraints.md) | Constraint schema and evaluation order |
+| [Policy DSL](./policy-dsl.md) | Fluent `can("tool").where(...)` API |
 | [Adapter setup](./adapters-setup.md) | Gmail and Slack live credentials |
 | [Audit and approvals](./audit-and-approvals.md) | Persistent audit + human-in-the-loop |
 | [Publishing](./publishing.md) | npm package release (maintainers) |

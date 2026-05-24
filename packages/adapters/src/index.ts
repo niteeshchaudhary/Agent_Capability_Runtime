@@ -22,8 +22,11 @@ export {
 export { createSlackLiveAdapter } from "./slack-live.js";
 export { slackStubAdapter } from "./slack-stub.js";
 export type {
+  ExecutionContext,
+  ExecutionContract,
   GmailSendResult,
   HttpRequestResult,
   SlackSendResult,
   ToolAdapter,
 } from "./types.js";
+export { claimsToExecutionCapability } from "./execution-contract.js";

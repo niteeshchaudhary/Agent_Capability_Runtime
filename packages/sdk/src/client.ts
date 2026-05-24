@@ -1,6 +1,7 @@
 import type {
   CapabilityTokenClaims,
   ConstraintSet,
+  DelegateCapabilityInput,
   GrantCapabilityInput,
   ToolId,
 } from "@acr/capability-token";
@@ -10,6 +11,8 @@ export interface AcrClientHttpConfig {
   baseUrl: string;
   /** When set, grant/execute use local runtime instead of HTTP */
   local?: RuntimeConfig;
+  /** RFC-0005: Bearer token for POST /capabilities/grant and /delegate */
+  adminApiKey?: string;
 }
 
 export interface GrantResponse {
@@ -25,6 +28,17 @@ export interface ExecuteHttpResponse {
   auditId: string;
   approvalId?: string;
   code?: string;
+  evaluatedConditions?: { kind: string; passed: boolean; reason?: string }[];
+}
+
+export interface ExecuteInput {
+  token: string;
+  tool: ToolId;
+  payload: Record<string, unknown>;
+  approvalId?: string;
+  requestId?: string;
+  intent?: string;
+  simulate?: boolean;
 }
 
 /**
@@ -32,13 +46,23 @@ export interface ExecuteHttpResponse {
  */
 export class AcrClient {
   private readonly baseUrl: string;
+  private readonly adminApiKey?: string;
   private readonly localRuntime?: AgentCapabilityRuntime;
 
   constructor(config: AcrClientHttpConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
+    this.adminApiKey = config.adminApiKey;
     if (config.local) {
       this.localRuntime = new AgentCapabilityRuntime(config.local);
     }
+  }
+
+  private issuanceHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (this.adminApiKey) {
+      headers.Authorization = `Bearer ${this.adminApiKey}`;
+    }
+    return headers;
   }
 
   async grant(input: GrantCapabilityInput): Promise<GrantResponse> {
@@ -53,7 +77,7 @@ export class AcrClient {
 
     const res = await fetch(`${this.baseUrl}/capabilities/grant`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.issuanceHeaders(),
       body: JSON.stringify(input),
     });
 
@@ -122,12 +146,34 @@ export class AcrClient {
     }
   }
 
-  async execute(input: {
-    token: string;
-    tool: ToolId;
-    payload: Record<string, unknown>;
-    approvalId?: string;
-  }): Promise<ExecuteResult> {
+  async delegate(
+    parentToken: string,
+    input: DelegateCapabilityInput,
+  ): Promise<GrantResponse> {
+    if (this.localRuntime) {
+      const result = await this.localRuntime.delegate(parentToken, input);
+      return {
+        token: result.token,
+        claims: result.claims,
+        expiresAt: result.expiresAt.toISOString(),
+      };
+    }
+
+    const res = await fetch(`${this.baseUrl}/capabilities/delegate`, {
+      method: "POST",
+      headers: this.issuanceHeaders(),
+      body: JSON.stringify({ parentToken, ...input }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json()) as { message?: string };
+      throw new Error(err.message ?? `Delegate failed: ${res.status}`);
+    }
+
+    return res.json() as Promise<GrantResponse>;
+  }
+
+  async execute(input: ExecuteInput): Promise<ExecuteResult> {
     if (this.localRuntime) {
       return this.localRuntime.execute(input);
     }
@@ -139,6 +185,17 @@ export class AcrClient {
     });
 
     const body = (await res.json()) as ExecuteHttpResponse;
+
+    if (res.status === 200 && body.decision === "SIMULATE") {
+      return {
+        ok: true,
+        decision: "SIMULATE",
+        reason: body.reason,
+        auditId: body.auditId,
+        claims: {} as CapabilityTokenClaims,
+        evaluatedConditions: body.evaluatedConditions,
+      };
+    }
 
     if (res.status === 200 && body.decision === "ALLOW") {
       return {

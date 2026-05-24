@@ -39,6 +39,12 @@ export interface CapabilityTokenClaims {
   iat: number;
   exp: number;
   jti: string;
+  /** Parent capability this token was delegated from */
+  parent_jti?: string;
+  /** Depth in delegation chain (0 = root grant) */
+  delegation_depth?: number;
+  /** Ordered chain of delegators for lineage */
+  delegator_chain?: string[];
 }
 
 /** Constraints as stored in JWT */
@@ -54,6 +60,13 @@ export interface JwtConstraintSet {
   approval_required_if_external?: boolean;
 }
 
+/** Lineage fields for transitive delegation (v1 foundation) */
+export interface DelegationLineage {
+  parentJti?: string;
+  delegationDepth?: number;
+  delegatorChain?: string[];
+}
+
 export interface GrantCapabilityInput {
   agentId: string;
   tool: ToolId;
@@ -62,8 +75,14 @@ export interface GrantCapabilityInput {
   delegator?: string;
   session?: string;
   task?: string;
+  /** Human-readable intent label (e.g. "support_response") for future intent-aware policy */
+  intent?: string;
   metadata?: Record<string, unknown>;
   issuer?: string;
+  /** Delegation: parent capability jti */
+  parentJti?: string;
+  delegationDepth?: number;
+  delegatorChain?: string[];
 }
 
 export interface SignerOptions {

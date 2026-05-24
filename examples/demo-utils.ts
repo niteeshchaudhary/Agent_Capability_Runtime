@@ -34,8 +34,26 @@ export function section(step: number, title: string, subtitle?: string): void {
 
 export function logDecision(
   label: string,
-  outcome: { ok: boolean; decision?: string; reason?: string; result?: unknown; approvalId?: string },
+  outcome: {
+    ok: boolean;
+    decision?: string;
+    reason?: string;
+    result?: unknown;
+    approvalId?: string;
+    evaluatedConditions?: unknown;
+  },
 ): void {
+  const decision = outcome.decision ?? (outcome.ok ? "ALLOW" : "DENY");
+
+  if (decision === "SIMULATE") {
+    console.log(colors.warn(`   ◆ ${label}: SIMULATE (no side effects)`));
+    if (outcome.reason) console.log(colors.dim(`     ${outcome.reason}`));
+    if (outcome.evaluatedConditions) {
+      console.log(colors.dim(`     conditions: ${JSON.stringify(outcome.evaluatedConditions)}`));
+    }
+    return;
+  }
+
   if (outcome.ok) {
     console.log(colors.ok(`   ✓ ${label}: ALLOW`));
     if (outcome.result !== undefined) {
@@ -43,7 +61,7 @@ export function logDecision(
     }
     return;
   }
-  const decision = outcome.decision ?? "DENY";
+
   if (decision === "REQUIRE_APPROVAL") {
     console.log(colors.warn(`   ⏸ ${label}: REQUIRE_APPROVAL`));
     if (outcome.reason) console.log(colors.dim(`     ${outcome.reason}`));

@@ -1,5 +1,7 @@
 # Audit and approvals (Week 3)
 
+> **Normative:** [RFC-0002: Runtime Execution](./rfc/RFC-0002-runtime-execution.md) (approvals), [RFC-0003: Audit Lineage](./rfc/RFC-0003-audit-lineage.md) (events)
+
 Persistent audit logging and human-in-the-loop approval workflows.
 
 ## Audit storage
@@ -20,7 +22,7 @@ GET /audit?agentId=agent_1&decision=DENY&limit=50
 |-------------|-------------|
 | `agentId` | Filter by agent |
 | `tool` | Filter by tool id |
-| `decision` | `ALLOW`, `DENY`, or `REQUIRE_APPROVAL` |
+| `decision` | `ALLOW`, `DENY`, `REQUIRE_APPROVAL`, or `SIMULATE` |
 | `since` | ISO timestamp lower bound |
 | `until` | ISO timestamp upper bound |
 | `limit` | Max events (most recent when set) |

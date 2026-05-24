@@ -39,7 +39,11 @@ export class AuditLog implements AuditStore {
     if (input.delegator !== undefined) event.delegator = input.delegator;
     if (input.jti !== undefined) event.jti = input.jti;
     if (input.task !== undefined) event.task = input.task;
+    if (input.intent !== undefined) event.intent = input.intent;
+    if (input.requestId !== undefined) event.requestId = input.requestId;
     if (input.approvalId !== undefined) event.approvalId = input.approvalId;
+    if (input.policySnapshot !== undefined) event.policySnapshot = input.policySnapshot;
+    if (input.lineage !== undefined) event.lineage = input.lineage;
     if (input.payload !== undefined) {
       event.payloadSummary = summarizePayload(input.payload);
     }

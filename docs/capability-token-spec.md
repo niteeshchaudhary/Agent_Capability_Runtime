@@ -1,5 +1,8 @@
 # Capability Token Specification (v1)
 
+> **Normative spec:** [RFC-0001: Capability Token Specification](./rfc/RFC-0001-capability-token.md) (**Stable** 1.0.0)  
+> This page is a developer quick reference. For interoperability, terminology, and security guarantees, use the RFC.
+
 Agent Capability Runtime (ACR) issues **capability tokens** — short-lived, signed JWTs that grant an agent permission to invoke a specific tool under explicit constraints.
 
 ## Design goals
@@ -56,6 +59,11 @@ Tokens are **JSON Web Tokens (JWT)** signed with **HS256** (development) or **Ed
 | `iat` | Yes | Issued-at (Unix seconds) |
 | `exp` | Yes | Expiration (Unix seconds) |
 | `jti` | Yes | Unique token ID for audit and replay prevention |
+| `parent_jti` | No | Parent token when delegated |
+| `delegation_depth` | No | Delegation chain depth (0 = root) |
+| `delegator_chain` | No | Ordered delegators for lineage |
+
+See [RFC-0001](./rfc/RFC-0001-capability-token.md) for delegation rules and constraint subset requirements.
 
 ## Supported tools (v1)
 
@@ -122,3 +130,5 @@ const claims = result.claims;
 ## Versioning
 
 This document describes **v1**. Breaking claim changes increment the major version and may use a `acr_ver` claim in future revisions.
+
+**RFC:** [RFC-0001](./rfc/RFC-0001-capability-token.md) (profile `acr-capability-v1`)

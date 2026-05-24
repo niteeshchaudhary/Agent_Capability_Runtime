@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.1.0] - 2026-05-24
 
+### Protocol
+
+- **ACR v1.0 Stable** — RFC-0001 through RFC-0005 promoted to Stable at version 1.0.0 ([docs/rfc/STABLE.md](./docs/rfc/STABLE.md))
+
 ### Added
 
 - `@acr/capability-token` — HS256 capability JWT grant and validation

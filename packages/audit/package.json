@@ -25,6 +25,9 @@
   "keywords": ["ai-agents", "audit", "logging", "governance"],
   "engines": { "node": ">=20" },
   "publishConfig": { "access": "public" },
+  "dependencies": {
+    "@acr/capability-token": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

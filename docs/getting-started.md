@@ -59,11 +59,12 @@ cp apps/gateway/.env.example apps/gateway/.env
 npx pnpm@9.15.0 dev:gateway
 ```
 
-Grant a token:
+Grant a token (include admin header when `ACR_ADMIN_API_KEY` is set — [RFC-0005](./rfc/RFC-0005-admin-authentication.md)):
 
 ```bash
 curl -s -X POST http://localhost:3000/capabilities/grant \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACR_ADMIN_API_KEY" \
   -d '{
     "agentId": "agent_1",
     "tool": "gmail.send",
@@ -83,7 +84,23 @@ curl -s -X POST http://localhost:3000/runtime/execute \
   }'
 ```
 
-## 4. Approvals
+## 4. Multi-instance consumption (Redis)
+
+For multiple gateway replicas, use a shared Redis ledger ([RFC-0004](./rfc/RFC-0004-distributed-consumption.md)):
+
+```bash
+# apps/gateway/.env
+ACR_REDIS_URL=redis://localhost:6379
+ACR_CONSUMPTION_MODE=redis
+```
+
+Install the optional peer dependency in your deployment:
+
+```bash
+npm install redis
+```
+
+## 5. Approvals
 
 When a constraint requires human approval:
 
@@ -93,7 +110,7 @@ npx pnpm@9.15.0 example:approval
 
 See [audit-and-approvals.md](./audit-and-approvals.md) for the full workflow.
 
-## 5. Live Gmail / Slack
+## 6. Live Gmail / Slack
 
 Set credentials in `apps/gateway/.env` and see [adapters-setup.md](./adapters-setup.md).
 
@@ -101,4 +118,5 @@ Set credentials in `apps/gateway/.env` and see [adapters-setup.md](./adapters-se
 
 - [Policy constraints](./policy-constraints.md) — tune what agents can do
 - [Runtime API](./runtime-api.md) — full HTTP reference
-- [Capability token spec](./capability-token-spec.md) — JWT claim details
+- [RFC-0001](./rfc/RFC-0001-capability-token.md) — normative capability token spec
+- [RFC-0004](./rfc/RFC-0004-distributed-consumption.md) — Redis consumption for scale-out

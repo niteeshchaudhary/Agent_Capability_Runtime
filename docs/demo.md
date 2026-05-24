@@ -36,7 +36,10 @@ npx pnpm@9.15.0 demo -- --auto
 | 4 | **REQUIRE_APPROVAL** — external partner → approve → resume |
 | 5 | **DENY** — `max_actions` exceeded after 3 sends |
 | 6 | **ALLOW** — separate `slack.send` capability |
-| 7 | Audit trail summary |
+| 7 | **SIMULATE** — policy dry-run, no email sent |
+| 8 | **Delegation** — planner → executor with lineage |
+| 9 | **Idempotent** — same `requestId` replays without double send |
+| 10 | Audit trail (snapshots + lineage) |
 
 ## Option B — HTTP gateway demo
 
@@ -56,7 +59,7 @@ npx pnpm@9.15.0 dev:gateway
 npx pnpm@9.15.0 demo:http
 ```
 
-Endpoints exercised: `GET /health`, `POST /capabilities/grant`, `POST /runtime/execute`, `POST /approvals/:id/approve`, `GET /audit`.
+Endpoints exercised: `GET /health`, `POST /capabilities/grant`, `POST /capabilities/delegate`, `POST /runtime/execute`, `POST /approvals/:id/approve`, `GET /audit`.
 
 ## Talking points (30-second pitch)
 

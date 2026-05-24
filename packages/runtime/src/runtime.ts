@@ -1,15 +1,22 @@
-import { createAdapterRegistry, type AdapterRegistry } from "@acr/adapters";
+import {
+  claimsToExecutionCapability,
+  createAdapterRegistry,
+  type AdapterRegistry,
+} from "@acr/adapters";
 import type { AuditStore } from "@acr/audit";
 import {
   constraintsFromJwt,
+  delegateCapability,
   grantCapability,
   validateCapability,
   type CapabilityTokenClaims,
+  type DelegateCapabilityInput,
   type GrantCapabilityInput,
   type GrantCapabilityResult,
 } from "@acr/capability-token";
 import { evaluatePolicy } from "@acr/policy-engine";
-import { ActionCounter } from "./action-counter.js";
+import { ConsumptionLedger } from "./consumption/consumption-ledger.js";
+import type { ConsumptionStore } from "./consumption/types.js";
 import {
   approvalMatchesExecution,
   type ApprovalRequest,
@@ -42,11 +49,30 @@ function validationCodeToHttp(
   }
 }
 
+function lineageFromClaims(claims: CapabilityTokenClaims) {
+  return {
+    parentJti: claims.parent_jti,
+    delegationDepth: claims.delegation_depth,
+    delegatorChain: claims.delegator_chain,
+  };
+}
+
+function intentFromClaims(claims: CapabilityTokenClaims, override?: string): string | undefined {
+  if (override) return override;
+  const meta = claims.metadata?.intent;
+  return typeof meta === "string" ? meta : undefined;
+}
+
 export class AgentCapabilityRuntime {
   readonly audit: AuditStore;
   readonly approvals: ApprovalStore;
-  readonly actions: ActionCounter;
+  readonly consumption: ConsumptionStore;
   readonly adapters: AdapterRegistry;
+
+  /** @deprecated Use `consumption` — kept for demo compatibility */
+  get actions(): ConsumptionStore {
+    return this.consumption;
+  }
 
   private readonly config: RuntimeConfig;
 
@@ -55,13 +81,15 @@ export class AgentCapabilityRuntime {
     options?: {
       audit?: AuditStore;
       approvals?: ApprovalStore;
-      actions?: ActionCounter;
+      consumption?: ConsumptionStore;
+      /** @deprecated */
+      actions?: ConsumptionStore;
     },
   ) {
     this.config = config;
     this.audit = options?.audit ?? createAuditStore(config);
     this.approvals = options?.approvals ?? createApprovalStore(config);
-    this.actions = options?.actions ?? new ActionCounter();
+    this.consumption = options?.consumption ?? options?.actions ?? new ConsumptionLedger();
     this.adapters = createAdapterRegistry(
       config.adapters ?? { mode: "stub" },
     );
@@ -69,6 +97,16 @@ export class AgentCapabilityRuntime {
 
   async grant(input: GrantCapabilityInput): Promise<GrantCapabilityResult> {
     return grantCapability(input, {
+      secret: this.config.secret,
+      issuer: this.config.issuer,
+    });
+  }
+
+  async delegate(
+    parentToken: string,
+    input: DelegateCapabilityInput,
+  ): Promise<GrantCapabilityResult> {
+    return delegateCapability(parentToken, input, {
       secret: this.config.secret,
       issuer: this.config.issuer,
     });
@@ -88,6 +126,8 @@ export class AgentCapabilityRuntime {
         decision: "DENY",
         reason: validation.error.message,
         payload: input.payload,
+        requestId: input.requestId,
+        intent: input.intent,
       });
 
       return {
@@ -112,6 +152,10 @@ export class AgentCapabilityRuntime {
           reason: `approval not found: ${input.approvalId}`,
           jti: claims.jti,
           payload: input.payload,
+          approvalId: input.approvalId,
+          requestId: input.requestId,
+          intent: intentFromClaims(claims, input.intent),
+          lineage: lineageFromClaims(claims),
         });
         return {
           ok: false,
@@ -131,6 +175,9 @@ export class AgentCapabilityRuntime {
           jti: claims.jti,
           payload: input.payload,
           approvalId: input.approvalId,
+          requestId: input.requestId,
+          intent: intentFromClaims(claims, input.intent),
+          lineage: lineageFromClaims(claims),
         });
         return {
           ok: false,
@@ -147,18 +194,28 @@ export class AgentCapabilityRuntime {
     return this.executeWithClaims(claims, input.payload, {
       token: input.token,
       approvalGranted,
+      requestId: input.requestId,
+      intent: input.intent,
+      simulate: input.simulate,
     });
   }
 
-  /** Execute when claims are already validated (e.g. tests) */
   async executeWithClaims(
     claims: CapabilityTokenClaims,
     payload: Record<string, unknown>,
-    options?: { token?: string; approvalGranted?: boolean },
+    options?: {
+      token?: string;
+      approvalGranted?: boolean;
+      requestId?: string;
+      intent?: string;
+      simulate?: boolean;
+    },
   ): Promise<ExecuteResult> {
     const tool = claims.tool;
     const constraints = constraintsFromJwt(claims.constraints);
-    const actionCount = this.actions.get(claims.jti);
+    const actionCount = await this.consumption.get(claims.jti);
+    const intent = intentFromClaims(claims, options?.intent);
+    const lineage = lineageFromClaims(claims);
 
     const policy = evaluatePolicy({
       tool,
@@ -166,6 +223,8 @@ export class AgentCapabilityRuntime {
       payload,
       actionCount,
       approvalGranted: options?.approvalGranted,
+      simulate: options?.simulate,
+      intent,
     });
 
     const baseAudit = {
@@ -174,7 +233,11 @@ export class AgentCapabilityRuntime {
       delegator: claims.delegator,
       jti: claims.jti,
       task: claims.task,
+      intent,
+      requestId: options?.requestId,
       payload,
+      policySnapshot: constraints,
+      lineage,
     };
 
     if (policy.decision === "DENY") {
@@ -220,10 +283,72 @@ export class AgentCapabilityRuntime {
       };
     }
 
+    if (policy.decision === "SIMULATE" || options?.simulate) {
+      const audit = this.audit.record({
+        ...baseAudit,
+        decision: "SIMULATE",
+        reason: policy.reason ?? "simulated allow",
+      });
+      return {
+        ok: true,
+        decision: "SIMULATE",
+        reason: policy.reason,
+        auditId: audit.id,
+        claims,
+        evaluatedConditions: policy.evaluatedConditions,
+      };
+    }
+
+    const consume = await this.consumption.tryConsume(
+      claims.jti,
+      constraints.maxActions,
+      options?.requestId,
+    );
+
+    if (!consume.allowed) {
+      const audit = this.audit.record({
+        ...baseAudit,
+        decision: "DENY",
+        reason: consume.reason ?? "max_actions exceeded",
+      });
+      return {
+        ok: false,
+        decision: "DENY",
+        reason: consume.reason ?? "max_actions exceeded",
+        auditId: audit.id,
+        code: "policy_denied",
+      };
+    }
+
+    if (consume.replay) {
+      const audit = this.audit.record({
+        ...baseAudit,
+        decision: "ALLOW",
+        reason: consume.reason,
+      });
+      return {
+        ok: true,
+        decision: "ALLOW",
+        result: { status: "replay", requestId: options?.requestId },
+        auditId: audit.id,
+        claims,
+      };
+    }
+
     try {
       const adapter = this.adapters.get(tool);
-      const result = await adapter.execute(payload);
-      this.actions.increment(claims.jti);
+      const execCtx = {
+        capability: claimsToExecutionCapability(claims),
+        intent,
+        payload,
+        simulate: false,
+        requestId: options?.requestId,
+      };
+
+      const result =
+        adapter.executeWithContext !== undefined
+          ? await adapter.executeWithContext(execCtx)
+          : await adapter.execute(payload);
 
       const audit = this.audit.record({
         ...baseAudit,
@@ -238,6 +363,7 @@ export class AgentCapabilityRuntime {
         claims,
       };
     } catch (err) {
+      await this.consumption.release(claims.jti, options?.requestId);
       const message = err instanceof Error ? err.message : String(err);
       const audit = this.audit.record({
         ...baseAudit,

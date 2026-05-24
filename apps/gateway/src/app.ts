@@ -1,21 +1,30 @@
-import { grantCapabilityInputSchema, toolIdSchema, type ToolId } from "@acr/capability-token";
+import { grantCapabilityInputSchema, toolIdSchema, constraintSetSchema, type ToolId } from "@acr/capability-token";
 import type { AgentCapabilityRuntime } from "@acr/runtime";
 import { Hono } from "hono";
 import { z } from "zod";
+import { requireAdminAuth, type AdminAuthConfig } from "./admin-auth.js";
 
 export const GATEWAY_VERSION = "0.1.0";
+
+export interface GatewayConfig {
+  /** When non-empty, grant/delegate require admin Bearer token (RFC-0005) */
+  adminAuth?: AdminAuthConfig;
+}
 
 const executeBodySchema = z.object({
   token: z.string().min(1),
   tool: toolIdSchema,
   payload: z.record(z.unknown()),
   approvalId: z.string().optional(),
+  requestId: z.string().optional(),
+  intent: z.string().optional(),
+  simulate: z.boolean().optional(),
 });
 
 const auditQuerySchema = z.object({
   agentId: z.string().optional(),
   tool: z.string().optional(),
-  decision: z.enum(["ALLOW", "DENY", "REQUIRE_APPROVAL"]).optional(),
+  decision: z.enum(["ALLOW", "DENY", "REQUIRE_APPROVAL", "SIMULATE"]).optional(),
   since: z.string().optional(),
   until: z.string().optional(),
   limit: z.coerce.number().int().positive().optional(),
@@ -27,14 +36,15 @@ const approvalQuerySchema = z.object({
   tool: toolIdSchema.optional(),
 });
 
-export function createApp(runtime: AgentCapabilityRuntime): Hono {
+export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: GatewayConfig): Hono {
   const app = new Hono();
+  const adminAuth = requireAdminAuth(gatewayConfig?.adminAuth ?? { apiKeys: [] });
 
   app.get("/health", (c) =>
     c.json({ status: "ok", version: GATEWAY_VERSION }),
   );
 
-  app.post("/capabilities/grant", async (c) => {
+  app.post("/capabilities/grant", adminAuth, async (c) => {
     let body: unknown;
     try {
       body = await c.req.json();
@@ -57,6 +67,64 @@ export function createApp(runtime: AgentCapabilityRuntime): Hono {
       const result = await runtime.grant({
         ...parsed.data,
         tool: parsed.data.tool as ToolId,
+      });
+      return c.json(
+        {
+          token: result.token,
+          claims: result.claims,
+          expiresAt: result.expiresAt.toISOString(),
+        },
+        201,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: "invalid_request", message }, 400);
+    }
+  });
+
+  const delegateBodySchema = z.object({
+    parentToken: z.string().min(1),
+    agentId: z.string().min(1),
+    tool: toolIdSchema,
+    constraints: constraintSetSchema,
+    expiresIn: z.union([z.string(), z.number()]).optional(),
+    delegator: z.string().optional(),
+    session: z.string().optional(),
+    task: z.string().optional(),
+    intent: z.string().optional(),
+    metadata: z.record(z.unknown()).optional(),
+  });
+
+  app.post("/capabilities/delegate", adminAuth, async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_request", message: "Invalid JSON body" }, 400);
+    }
+
+    const parsed = delegateBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: "invalid_request",
+          message: parsed.error.errors.map((e) => e.message).join("; "),
+        },
+        400,
+      );
+    }
+
+    try {
+      const result = await runtime.delegate(parsed.data.parentToken, {
+        agentId: parsed.data.agentId,
+        tool: parsed.data.tool as ToolId,
+        constraints: parsed.data.constraints,
+        expiresIn: parsed.data.expiresIn,
+        delegator: parsed.data.delegator,
+        session: parsed.data.session,
+        task: parsed.data.task,
+        intent: parsed.data.intent,
+        metadata: parsed.data.metadata,
       });
       return c.json(
         {
@@ -96,7 +164,19 @@ export function createApp(runtime: AgentCapabilityRuntime): Hono {
       tool: parsed.data.tool as ToolId,
       payload: parsed.data.payload,
       approvalId: parsed.data.approvalId,
+      requestId: parsed.data.requestId,
+      intent: parsed.data.intent,
+      simulate: parsed.data.simulate,
     });
+
+    if (result.ok && result.decision === "SIMULATE") {
+      return c.json({
+        decision: result.decision,
+        reason: result.reason,
+        auditId: result.auditId,
+        evaluatedConditions: result.evaluatedConditions,
+      });
+    }
 
     if (result.ok) {
       return c.json({

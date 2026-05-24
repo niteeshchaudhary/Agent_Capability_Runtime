@@ -122,6 +122,50 @@ describe("AcrClient HTTP", () => {
       client.grant({ agentId: "a", tool: "gmail.send", constraints: {} }),
     ).rejects.toThrow(/bad request/);
   });
+
+  it("sends admin Bearer on grant when adminApiKey is set", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        token: "tok",
+        claims: {},
+        expiresAt: new Date().toISOString(),
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new AcrClient({
+      baseUrl: "http://localhost:3000",
+      adminApiKey: "admin-secret-key-32-chars-minimum!!",
+    });
+    await client.grant({ agentId: "a", tool: "gmail.send", constraints: {} });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer admin-secret-key-32-chars-minimum!!");
+  });
+
+  it("POST /capabilities/delegate over HTTP", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        token: "child.tok",
+        claims: { sub: "child", parent_jti: "cap_parent" },
+        expiresAt: new Date().toISOString(),
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new AcrClient({ baseUrl: "http://localhost:3000" });
+    const result = await client.delegate("parent.tok", {
+      agentId: "child",
+      tool: "gmail.send",
+      constraints: { allowedDomains: ["company.com"] },
+    });
+    expect(result.token).toBe("child.tok");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://localhost:3000/capabilities/delegate");
+  });
 });
 
 describe("AcrClient approval (local)", () => {
