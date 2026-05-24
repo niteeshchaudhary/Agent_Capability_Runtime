@@ -1,0 +1,27 @@
+# Output of: pnpm demo:wow
+# Use as README screenshot source (terminal capture or carbon.now.sh)
+
+  OAuth was built for humans clicking "Allow."
+  Autonomous agents need runtime enforcement.
+
+── Step 1: Agent tries to email an external address ──
+   ✗ gmail.send → attacker@gmail.com: DENY
+     external domain blocked: gmail.com
+   ✓ gmail.send → customer@company.com: ALLOW
+
+── Step 2: Agent tries a payment over $100 ──
+   ⏸ Payment $250.00: REQUIRE_APPROVAL
+     spending $250.00 exceeds limit $100.00 — approval required
+   ✓ After CFO approval: ALLOW
+
+── Step 3: Capability revoked mid-session ──
+   ✓ Before revoke: ALLOW
+   ⚡ runtime.revoke("cap_...")
+   ✗ After revoke: DENY
+     SOC: compromised session
+
+── Step 4: Audit trail ──
+   11:46:22 DENY             gmail.send external domain blocked
+   11:46:22 ALLOW            gmail.send
+   11:46:22 REQUIRE_APPROVAL gmail.send spending exceeds limit
+   11:46:22 DENY             gmail.send SOC: compromised session

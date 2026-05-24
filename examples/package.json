@@ -8,10 +8,15 @@
     "demo": "tsx demo.ts",
     "demo:wow": "tsx demo-wow.ts",
     "demo:quick": "tsx demo-quick.ts",
-    "demo:http": "tsx demo-http.ts"
+    "demo:http": "tsx demo-http.ts",
+    "minimal": "tsx minimal.ts",
+    "benchmark": "tsx benchmark.ts"
   },
   "dependencies": {
-    "@acr/sdk": "workspace:*"
+    "@acr/sdk": "workspace:*",
+    "@acr/capability-token": "workspace:*",
+    "@acr/policy-engine": "workspace:*",
+    "@acr/runtime": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

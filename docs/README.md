@@ -15,6 +15,18 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 | [RFC-0004: Distributed Consumption](./rfc/RFC-0004-distributed-consumption.md) | Redis-backed consumption store |
 | [RFC-0005: Admin Authentication](./rfc/RFC-0005-admin-authentication.md) | Bearer auth for grant/delegate |
 
+## Adoption & positioning
+
+| Doc | Description |
+|-----|-------------|
+| [Use cases](./use-cases.md) | Who should adopt ACR today |
+| [Why not OAuth](./why-not-oauth.md) | vs scopes, RBAC, gateways, MCP |
+| [Threat stories](./threat-stories.md) | Narrative security examples |
+| [Threat examples](./threat-examples.md) | Scenario table |
+| [Benchmarks](./benchmarks.md) | `pnpm benchmark` results |
+| [Hosted demo](./hosted-demo.md) | Deploy a public playground |
+| [Publishing](./publishing.md) | npm package status |
+
 ## Getting started
 
 | Doc | Description |
@@ -26,6 +38,8 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 | [Policy DSL](./policy-dsl.md) | Fluent `can("tool").where(...)` API |
 | [Adapter setup](./adapters-setup.md) | Gmail and Slack live credentials |
 | [Audit and approvals](./audit-and-approvals.md) | Persistent audit + human-in-the-loop |
+| [Approvals guide](./approvals-guide.md) | Expiry, resume, approver identity |
+| [Security hardening](./security-hardening.md) | SSRF, replay, audit chain |
 | [Publishing](./publishing.md) | npm package release (maintainers) |
 
 ## Research
@@ -47,10 +61,11 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 | `@acr/audit` | Audit event storage and query |
 | `@acr/sdk` | Client for gateway or in-process runtime |
 
-Install the SDK for most integrations:
+**npm:** Packages may not be on the public registry yet — see [publishing.md](./publishing.md). Install from source:
 
 ```bash
-npm install @acr/sdk @acr/runtime
+git clone https://github.com/agent-capability-runtime/Agent_Capability_Runtime.git
+cd Agent_Capability_Runtime && pnpm install && pnpm build
 ```
 
-Or use individual packages if you only need token validation or policy evaluation.
+When published, prefer `@acr/sdk` for most integrations.

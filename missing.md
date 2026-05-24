@@ -73,8 +73,30 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 
 ---
 
+## OSS launch polish (pre-promotion)
+
+| Item | Status | Where |
+|------|--------|--------|
+| SECURITY.md | **Done** | [SECURITY.md](./SECURITY.md) |
+| CODE_OF_CONDUCT.md | **Done** | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) |
+| Why not OAuth | **Done** | [docs/why-not-oauth.md](./docs/why-not-oauth.md) |
+| Use cases | **Done** | [docs/use-cases.md](./docs/use-cases.md) |
+| Threat stories | **Done** | [docs/threat-stories.md](./docs/threat-stories.md) |
+| Approvals / SSRF / replay docs | **Done** | [docs/approvals-guide.md](./docs/approvals-guide.md), [docs/security-hardening.md](./docs/security-hardening.md) |
+| Architecture PNG/SVG | **Done** | [docs/assets/architecture.svg](./docs/assets/architecture.svg) |
+| Terminal screenshot | *Manual* | Capture `pnpm demo:wow` → `docs/assets/demo-wow.png` |
+| Benchmarks | **Done** | `pnpm benchmark` → [docs/benchmarks.md](./docs/benchmarks.md) |
+| Minimal <25 LOC example | **Done** | `pnpm minimal` → [examples/minimal.ts](./examples/minimal.ts) |
+| npm publishing clarity | **Done** | [docs/publishing.md](./docs/publishing.md) |
+| Hosted demo guide | **Done** | [docs/hosted-demo.md](./docs/hosted-demo.md) |
+| Launch checklist | **Done** | [LAUNCH.md](./LAUNCH.md) |
+| Public playground URL | *Manual* | Deploy gateway per hosted-demo.md |
+
+---
+
 ## Still manual (high leverage)
 
 1. **Record a 30s GIF** — run `pnpm demo:wow`, capture terminal
 2. **Pin demo GIF** in README (upload to repo `docs/assets/` or GitHub release)
-3. **Post thread** linking README + threat-examples + demo:wow
+3. **Post thread** linking README + threat-stories + demo:wow
+4. **Deploy hosted playground** and add URL to README

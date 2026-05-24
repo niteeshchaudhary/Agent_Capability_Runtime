@@ -2,6 +2,11 @@
 
 Thanks for your interest in Agent Capability Runtime (ACR).
 
+## Community standards
+
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) — expected behavior in issues, PRs, and discussions
+- [SECURITY.md](./SECURITY.md) — **do not** file public issues for vulnerabilities; use private reporting or the security email listed there
+
 ## Development setup
 
 Requires Node.js 20+.

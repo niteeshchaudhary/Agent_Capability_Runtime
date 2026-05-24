@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" font-family="system-ui,Segoe UI,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="920" height="420" fill="url(#bg)" rx="12"/>
+  <text x="460" y="36" fill="#f8fafc" font-size="20" font-weight="600" text-anchor="middle">Agent Capability Runtime  Execute Flow</text>
+  <!-- Agent -->
+  <rect x="40" y="80" width="120" height="56" rx="8" fill="#334155" stroke="#64748b"/>
+  <text x="100" y="112" fill="#e2e8f0" font-size="13" text-anchor="middle">Agent / LLM</text>
+  <!-- Gateway -->
+  <rect x="220" y="70" width="160" height="76" rx="8" fill="#1d4ed8" stroke="#3b82f6"/>
+  <text x="300" y="100" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">ACR Runtime</text>
+  <text x="300" y="120" fill="#bfdbfe" font-size="11" text-anchor="middle">validate · policy · sandbox</text>
+  <!-- Tools -->
+  <rect x="440" y="80" width="120" height="56" rx="8" fill="#334155" stroke="#64748b"/>
+  <text x="500" y="112" fill="#e2e8f0" font-size="13" text-anchor="middle">Adapters</text>
+  <!-- Audit -->
+  <rect x="220" y="200" width="160" height="56" rx="8" fill="#334155" stroke="#64748b"/>
+  <text x="300" y="232" fill="#e2e8f0" font-size="13" text-anchor="middle">Audit + Approvals</text>
+  <!-- Decisions -->
+  <rect x="620" y="60" width="260" height="140" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="640" y="88" fill="#94a3b8" font-size="12" font-weight="600">Decisions</text>
+  <text x="640" y="110" fill="#4ade80" font-size="12">ALLOW ’ adapter runs</text>
+  <text x="640" y="130" fill="#f87171" font-size="12">DENY ’ blocked + audit</text>
+  <text x="640" y="150" fill="#fbbf24" font-size="12">REQUIRE_APPROVAL ’ human gate</text>
+  <text x="640" y="170" fill="#38bdf8" font-size="12">SIMULATE ’ dry run</text>
+  <text x="640" y="190" fill="#c084fc" font-size="12">REVOKED ’ token_revoked</text>
+  <!-- Arrows -->
+  <path d="M160 108 L220 108" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M380 108 L440 108" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M300 146 L300 200" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M380 120 L620 120" stroke="#64748b" stroke-width="2" stroke-dasharray="4"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <text x="460" y="320" fill="#94a3b8" font-size="11" text-anchor="middle">Capability JWT: tool + constraints + exp + jti</text>
+  <text x="460" y="340" fill="#94a3b8" font-size="11" text-anchor="middle">OAuth = who connected the app · ACR = what each execute may do</text>
+</svg>

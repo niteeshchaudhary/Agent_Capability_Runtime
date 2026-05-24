@@ -44,6 +44,15 @@ importers:
 
   examples:
     dependencies:
+      '@acr/capability-token':
+        specifier: workspace:*
+        version: link:../packages/capability-token
+      '@acr/policy-engine':
+        specifier: workspace:*
+        version: link:../packages/policy-engine
+      '@acr/runtime':
+        specifier: workspace:*
+        version: link:../packages/runtime
       '@acr/sdk':
         specifier: workspace:*
         version: link:../packages/sdk
