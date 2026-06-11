@@ -150,6 +150,11 @@ class PolicyBuilder:
         self._constraints: dict[str, Any] = {}
         self._grant_expires_in: str | int | None = None
 
+    @property
+    def tool(self) -> str:
+        """ACR tool id this policy applies to (e.g. ``"http.request"``)."""
+        return self._tool
+
     # ── Domain helpers ───────────────────────────────────────────────────
 
     def only_domain(self, domain_name: str) -> PolicyBuilder:

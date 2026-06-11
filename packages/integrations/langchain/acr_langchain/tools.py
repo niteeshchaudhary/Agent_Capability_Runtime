@@ -16,11 +16,31 @@ from acr_langchain.guard import CapabilityGuard
 PayloadBuilder = Callable[[dict[str, Any]], dict[str, Any]]
 
 
+_JSON_PRIMITIVES = (str, int, float, bool, type(None))
+
+
+def _coerce(value: Any) -> Any:
+    """Coerce tool arguments into JSON-safe payload values."""
+    if isinstance(value, _JSON_PRIMITIVES):
+        return value
+    if isinstance(value, dict):
+        return {str(k): _coerce(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_coerce(v) for v in value]
+    return str(value)
+
+
 def _default_payload(tool_name: str, kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Build a generic http.request-style payload from tool kwargs."""
-    payload: dict[str, Any] = {"toolName": tool_name, **kwargs}
-    if "url" in kwargs:
-        payload.setdefault("method", "GET")
+    """Infer an execute payload from tool kwargs (convention over configuration).
+
+    - All kwargs pass through (JSON-coerced) so constraints can match them.
+    - ``url`` present without ``method`` → assumes ``GET`` (http.request).
+    - ``toolName`` is added for audit context.
+    """
+    payload: dict[str, Any] = {str(k): _coerce(v) for k, v in kwargs.items()}
+    payload.setdefault("toolName", tool_name)
+    if "url" in payload and "method" not in payload:
+        payload["method"] = "GET"
     return payload
 
 

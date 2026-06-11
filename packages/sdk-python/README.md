@@ -22,7 +22,41 @@ pip install acr-sdk
 
 ## Quick Start
 
-### Async (FastAPI / LangChain)
+### Embedded mode — zero infrastructure
+
+No gateway, no Docker, no Node. Policy enforcement runs inside your process:
+
+```python
+from acr import LocalAcrClient, can
+
+client = LocalAcrClient()  # in-process runtime
+
+grant = client.grant_sync(
+    can("gmail.send").only_domain("company.com").limit(5).to_grant_input(agent_id="a1")
+)
+
+result = client.execute_sync(
+    token=grant.token, tool="gmail.send",
+    payload={"to": "user@company.com", "subject": "Hello"},
+)
+print(result.decision)  # "ALLOW"
+
+result = client.execute_sync(
+    token=grant.token, tool="gmail.send",
+    payload={"to": "attacker@gmail.com", "subject": "Exfil"},
+)
+print(result.decision)  # "DENY"
+```
+
+Or let the environment decide (gateway when `ACR_GATEWAY_URL` is set, embedded otherwise):
+
+```python
+from acr import create_client
+
+client = create_client()
+```
+
+### Async (FastAPI / LangChain) — gateway mode
 
 ```python
 from acr import AcrClient, can
@@ -121,10 +155,26 @@ client = AcrClient(
 )
 ```
 
+## LangChain integration
+
+```bash
+pip install "acr-sdk[langchain]"
+```
+
+```python
+from acr import can
+from acr.langchain import protect
+
+tools = protect(my_tools, agent_id="my_agent", policy=can("http.request").limit(50))
+```
+
+See [packages/integrations/langchain](../integrations/langchain).
+
 ## Requirements
 
 - Python 3.10+
-- A running ACR gateway (`pnpm dev:gateway`)
+- Embedded mode: nothing else
+- Gateway mode: a running ACR gateway (`pnpm dev:gateway`)
 
 ## Gateway e2e
 
