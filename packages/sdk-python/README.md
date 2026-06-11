@@ -7,15 +7,17 @@
 
 ## Install
 
-```bash
-pip install acr-sdk
-```
-
-Or from source:
+From source (PyPI publish pending):
 
 ```bash
 cd Agent_Capability_Runtime/packages/sdk-python
 pip install -e ".[dev]"
+```
+
+When published:
+
+```bash
+pip install acr-sdk
 ```
 
 ## Quick Start
@@ -123,6 +125,16 @@ client = AcrClient(
 
 - Python 3.10+
 - A running ACR gateway (`pnpm dev:gateway`)
+
+## Gateway e2e
+
+With the gateway running:
+
+```bash
+python packages/sdk-python/examples/e2e_gateway.py
+# or
+ACR_RUN_E2E=1 pytest packages/sdk-python/tests/test_e2e_gateway.py -v
+```
 
 ## License
 

@@ -1,7 +1,6 @@
 """Tests for acr.dsl — PolicyBuilder and can() fluent API."""
 
 from acr.dsl import (
-    PolicyBuilder,
     can,
     domain,
     hours,

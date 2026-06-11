@@ -5,7 +5,7 @@ import pytest
 import respx
 
 from acr.client import AcrClient
-from acr.exceptions import GrantError, ApprovalError
+from acr.exceptions import GrantError, RevokeError
 from acr.models import ExecuteApprovalRequired, ExecuteDenied, ExecuteSimulated, ExecuteSuccess
 
 
@@ -287,6 +287,121 @@ class TestApprovals:
             result = await client.reject("appr_1")
 
         assert result["approval"]["id"] == "appr_1"
+
+
+# ── Revoke ───────────────────────────────────────────────────────────────────
+
+
+class TestRevoke:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_revoke_success(self):
+        respx.post(f"{GATEWAY}/capabilities/revoke").mock(
+            return_value=httpx.Response(
+                200,
+                json={"revoked": True, "record": {"capabilityId": "cap_123"}},
+            )
+        )
+
+        async with AcrClient(base_url=GATEWAY) as client:
+            result = await client.revoke("cap_123", reason="compromised", revoked_by="admin")
+
+        assert result.revoked is True
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_revoke_error(self):
+        respx.post(f"{GATEWAY}/capabilities/revoke").mock(
+            return_value=httpx.Response(404, json={"message": "capability not found"})
+        )
+
+        async with AcrClient(base_url=GATEWAY) as client:
+            with pytest.raises(RevokeError, match="capability not found"):
+                await client.revoke("cap_missing")
+
+    @respx.mock
+    def test_revoke_sync(self):
+        respx.post(f"{GATEWAY}/capabilities/revoke").mock(
+            return_value=httpx.Response(200, json={"revoked": True})
+        )
+
+        client = AcrClient(base_url=GATEWAY)
+        result = client.revoke_sync("cap_123")
+        assert result.revoked is True
+        client.close()
+
+
+# ── Audit ────────────────────────────────────────────────────────────────────
+
+
+class TestAudit:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_list_audit(self):
+        respx.get(f"{GATEWAY}/audit").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "events": [
+                        {
+                            "id": "aud_1",
+                            "agentId": "agent_1",
+                            "tool": "gmail.send",
+                            "decision": "ALLOW",
+                        }
+                    ]
+                },
+            )
+        )
+
+        async with AcrClient(base_url=GATEWAY) as client:
+            events = await client.list_audit(agent_id="agent_1", limit=10)
+
+        assert len(events) == 1
+        assert events[0].decision == "ALLOW"
+        request = respx.calls[0].request
+        assert request.url.params["agentId"] == "agent_1"
+        assert request.url.params["limit"] == "10"
+
+    @respx.mock
+    def test_list_audit_sync(self):
+        respx.get(f"{GATEWAY}/audit").mock(
+            return_value=httpx.Response(200, json={"events": []})
+        )
+
+        client = AcrClient(base_url=GATEWAY)
+        events = client.list_audit_sync(tool="gmail.send")
+        assert events == []
+        client.close()
+
+
+# ── Health ───────────────────────────────────────────────────────────────────
+
+
+class TestHealth:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_health(self):
+        respx.get(f"{GATEWAY}/health").mock(
+            return_value=httpx.Response(200, json={"status": "ok", "version": "0.1.0"})
+        )
+
+        async with AcrClient(base_url=GATEWAY) as client:
+            result = await client.health()
+
+        assert result["status"] == "ok"
+        assert result["version"] == "0.1.0"
+
+    @respx.mock
+    def test_health_sync(self):
+        respx.get(f"{GATEWAY}/health").mock(
+            return_value=httpx.Response(200, json={"status": "ok"})
+        )
+
+        client = AcrClient(base_url=GATEWAY)
+        result = client.health_sync()
+        assert result["status"] == "ok"
+        client.close()
 
 
 # ── Sync wrappers ────────────────────────────────────────────────────────────

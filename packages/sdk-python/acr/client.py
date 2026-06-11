@@ -21,12 +21,11 @@ Usage::
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
 from acr.exceptions import (
-    AcrError,
     ApprovalError,
     DelegateError,
     ExecuteError,
@@ -429,7 +428,7 @@ class AcrClient:
                 data.get("message", f"Approve failed: {resp.status_code}"),
                 status_code=resp.status_code,
             )
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
     def approve_sync(self, approval_id: str, resolved_by: str | None = None) -> dict[str, Any]:
         """Approve a pending approval (sync)."""
@@ -445,7 +444,7 @@ class AcrClient:
                 data.get("message", f"Approve failed: {resp.status_code}"),
                 status_code=resp.status_code,
             )
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
     async def reject(self, approval_id: str, resolved_by: str | None = None) -> dict[str, Any]:
         """Reject a pending approval (async)."""
@@ -461,7 +460,7 @@ class AcrClient:
                 data.get("message", f"Reject failed: {resp.status_code}"),
                 status_code=resp.status_code,
             )
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
     def reject_sync(self, approval_id: str, resolved_by: str | None = None) -> dict[str, Any]:
         """Reject a pending approval (sync)."""
@@ -477,7 +476,7 @@ class AcrClient:
                 data.get("message", f"Reject failed: {resp.status_code}"),
                 status_code=resp.status_code,
             )
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
     # ── Audit ────────────────────────────────────────────────────────────
 
@@ -547,13 +546,13 @@ class AcrClient:
         """Check gateway health (async)."""
         client = self._get_async_client()
         resp = await client.get("/health")
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
     def health_sync(self) -> dict[str, Any]:
         """Check gateway health (sync)."""
         client = self._get_sync_client()
         resp = client.get("/health")
-        return resp.json()
+        return cast(dict[str, Any], resp.json())
 
 
 # ── Private helpers ──────────────────────────────────────────────────────────
@@ -594,28 +593,28 @@ def _parse_execute_response(resp: httpx.Response) -> ExecuteResult:
     audit_id = data.get("auditId", "")
 
     if resp.status_code == 200 and decision == "SIMULATE":
-        return ExecuteSimulated(
-            audit_id=audit_id,
-            reason=data.get("reason"),
-            evaluated_conditions=data.get("evaluatedConditions"),
-        )
+        return ExecuteSimulated.model_validate({
+            "auditId": audit_id,
+            "reason": data.get("reason"),
+            "evaluatedConditions": data.get("evaluatedConditions"),
+        })
 
     if resp.status_code == 200 and decision == "ALLOW":
-        return ExecuteSuccess(
-            audit_id=audit_id,
-            result=data.get("result"),
-        )
+        return ExecuteSuccess.model_validate({
+            "auditId": audit_id,
+            "result": data.get("result"),
+        })
 
     if resp.status_code == 202 and decision == "REQUIRE_APPROVAL":
-        return ExecuteApprovalRequired(
-            audit_id=audit_id,
-            reason=data.get("reason", "approval required"),
-            approval_id=data.get("approvalId", ""),
-        )
+        return ExecuteApprovalRequired.model_validate({
+            "auditId": audit_id,
+            "reason": data.get("reason", "approval required"),
+            "approvalId": data.get("approvalId", ""),
+        })
 
     # DENY (401, 403, or other)
-    return ExecuteDenied(
-        audit_id=audit_id,
-        reason=data.get("reason", "denied"),
-        code=data.get("code", "policy_denied"),
-    )
+    return ExecuteDenied.model_validate({
+        "auditId": audit_id,
+        "reason": data.get("reason", "denied"),
+        "code": data.get("code", "policy_denied"),
+    })

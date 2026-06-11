@@ -113,6 +113,25 @@ const result = await client.execute({
 
 Fluent API: `can("gmail.send").onlyDomain("company.com").maxSpend(100_00).expiresIn("10m")`
 
+**Python** (gateway HTTP client — FastAPI, LangChain, etc.):
+
+```python
+from acr import AcrClient, can
+
+async with AcrClient(base_url="http://localhost:3000") as client:
+    grant = await client.grant(
+        can("gmail.send").only_domain("company.com").limit(5).to_grant_input(agent_id="support_agent")
+    )
+    result = await client.execute(
+        token=grant.token,
+        tool="gmail.send",
+        payload={"to": "attacker@gmail.com", "subject": "Export"},
+    )
+    # → DENY: external domain blocked
+```
+
+See [packages/sdk-python](./packages/sdk-python) for install and full API.
+
 ---
 
 ## Quick start
@@ -133,7 +152,9 @@ Env: `apps/gateway/.env.example` → `ACR_SIGNING_SECRET` (32+ chars).
 
 | Package | Role |
 |---------|------|
-| `@acr/sdk` | `AcrClient` + `can()` DSL |
+| `@acr/sdk` | `AcrClient` + `can()` DSL (TypeScript) |
+| `acr-sdk` | `AcrClient` + `can()` DSL (Python 3.10+) — [packages/sdk-python](./packages/sdk-python) |
+| `acr-sdk-go` | `Client` + `Can()` DSL (Go 1.22+) — [packages/sdk-go](./packages/sdk-go) |
 | `@acr/runtime` | Execute, revoke, sandbox, approvals |
 | `@acr/capability-token` | JWT grant / validate |
 | `@acr/policy-engine` | Constraints + intent |

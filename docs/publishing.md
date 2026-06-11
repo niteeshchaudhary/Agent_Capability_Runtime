@@ -32,12 +32,41 @@ Then depend on workspace packages or use the examples/ folder directly.
 
 ## Publishing (maintainers)
 
+### npm (TypeScript)
+
 ```bash
 pnpm build
 pnpm publish:packages
 ```
 
 Requires npm org access to `@acr` scope and `NPM_TOKEN` in CI.
+
+### PyPI (Python)
+
+Package: **`acr-sdk`** (`packages/sdk-python`)
+
+| Package | PyPI | Notes |
+|---------|------|-------|
+| `acr-sdk` | Not published yet | Manual workflow or `python -m build` + twine |
+
+Pre-publish check: `pip index versions acr-sdk` → not found (claim name before publish).
+
+**Build locally:**
+
+```bash
+cd packages/sdk-python
+python -m pip install build twine
+python -m build
+twine check dist/*
+```
+
+**Publish (maintainers):**
+
+1. Bump `version` in `packages/sdk-python/pyproject.toml`
+2. Configure [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/) for this repo
+3. Run GitHub Action **Publish Python SDK** (`.github/workflows/publish-python.yml`)
+
+Requires `pypi` environment with trusted publisher configured.
 
 ## Versioning policy (target)
 
