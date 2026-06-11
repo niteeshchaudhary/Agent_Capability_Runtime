@@ -155,6 +155,7 @@ Env: `apps/gateway/.env.example` → `ACR_SIGNING_SECRET` (32+ chars).
 | `@acr/sdk` | `AcrClient` + `can()` DSL (TypeScript) |
 | `acr-sdk` | `AcrClient` + `can()` DSL (Python 3.10+) — [packages/sdk-python](./packages/sdk-python) |
 | `acr-sdk-go` | `Client` + `Can()` DSL (Go 1.22+) — [packages/sdk-go](./packages/sdk-go) |
+| `acr-langchain` | LangChain tool wrappers — [packages/integrations/langchain](./packages/integrations/langchain) |
 | `@acr/runtime` | Execute, revoke, sandbox, approvals |
 | `@acr/capability-token` | JWT grant / validate |
 | `@acr/policy-engine` | Constraints + intent |
