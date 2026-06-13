@@ -63,6 +63,14 @@ jobs:
           ruff check acr_langchain tests
           pytest -v
 
+      - name: Install and test MCP integration
+        run: |
+          python -m pip install -e packages/sdk-python
+          python -m pip install -e "packages/integrations/mcp[dev]"
+          cd packages/integrations/mcp
+          ruff check acr_mcp tests
+          pytest -v
+
   go-sdk:
     runs-on: ubuntu-latest
     steps:

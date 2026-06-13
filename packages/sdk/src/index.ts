@@ -8,6 +8,13 @@ export {
   type TopicRule,
   type TopicRuleInput,
 } from "./scope.js";
+export {
+  McpToolGuard,
+  type McpCheckResult,
+  type McpEnforceMode,
+  type McpPolicyConfigInput,
+  type McpToolPolicyInput,
+} from "./mcp-guard.js";
 export { can, domain, method, url, hours, intent } from "@acr/policy-engine";
 export type {
   AcrClientHttpConfig,

@@ -1,0 +1,34 @@
+# MCP tool policies for ACR
+# Wrap MCP servers with: pip install acr-mcp && acr-mcp-proxy ...
+
+version: 1
+agent_id: demo_agent
+mode: enforce          # enforce | shadow | disabled
+default_action: deny   # unlisted MCP tools: deny or allow
+
+tools:
+  read_file:
+    description: Read files — GET only, bounded
+    acr_tool: http.request
+    methods: [GET]
+    max_actions: 100
+    expires_in: 1h
+
+  write_file:
+    description: Write files — POST, stricter limit
+    acr_tool: http.request
+    methods: [POST]
+    max_actions: 20
+    expires_in: 1h
+
+  delete_file:
+    deny: true
+
+  search_repositories:
+    description: GitHub search — allow specific hosts only
+    acr_tool: http.request
+    methods: [GET]
+    allowed_urls: [api.github.com, github.com]
+    max_actions: 50
+
+refusal_message: "This MCP tool call is blocked by Agent Capability Runtime."
