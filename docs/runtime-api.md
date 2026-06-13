@@ -246,6 +246,8 @@ Liveness check.
 
 ## SDK mapping
 
+### TypeScript
+
 ```ts
 import { AcrClient } from "@acr/sdk";
 
@@ -283,6 +285,45 @@ const result = await client.execute({
 ```
 
 Lower-level token helpers: `grantCapability`, `delegateCapability`, `validateCapability` from `@acr/capability-token`. In-process runtime: `AgentCapabilityRuntime` from `@acr/runtime`.
+
+### Python
+
+```python
+from acr import AcrClient, can
+
+async with AcrClient(base_url="http://localhost:3000") as client:
+    grant = await client.grant(
+        can("gmail.send")
+        .only_domain("company.com")
+        .limit(5)
+        .to_grant_input(agent_id="agent_1")
+    )
+
+    child = await client.delegate(
+        grant.token,
+        can("gmail.send")
+        .only_domain("company.com")
+        .limit(2)
+        .to_grant_input(agent_id="agent_child"),
+    )
+
+    dry_run = await client.execute(
+        token=child.token,
+        tool="gmail.send",
+        payload={"to": "user@company.com", "subject": "Hi"},
+        simulate=True,
+    )
+
+    result = await client.execute(
+        token=child.token,
+        tool="gmail.send",
+        payload={"to": "user@company.com", "subject": "Hi"},
+        request_id="req_unique_id",
+        intent="customer_reply",
+    )
+```
+
+Install: `pip install -e packages/sdk-python` (PyPI publish pending). Sync wrappers: `grant_sync`, `execute_sync`, etc. Audit chain: `verify_audit_chain()`. See [packages/sdk-python/README.md](../packages/sdk-python/README.md).
 
 ---
 

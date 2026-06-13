@@ -103,6 +103,21 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 
 ---
 
+## Multi-language SDKs (`sdksupport` branch)
+
+| Item | Status | Where |
+|------|--------|--------|
+| Python SDK (`acr-sdk`) | **Done** | [packages/sdk-python](./packages/sdk-python) |
+| Go SDK (`acr-sdk-go`) | **Done** | [packages/sdk-go](./packages/sdk-go) |
+| LangChain integration | **Done** | [packages/integrations/langchain](./packages/integrations/langchain) |
+| Python `demo_wow.py` | **Done** | `python packages/sdk-python/examples/demo_wow.py` |
+| Go DSL parity (intent, HTTP) | **Done** | [packages/sdk-go/dsl.go](./packages/sdk-go/dsl.go) |
+| Gateway e2e CI (Python + Go) | **Done** | `.github/workflows/ci.yml` integration job |
+| PyPI publish workflow | **Done** | `.github/workflows/publish-python.yml` |
+| Roadmap / naming docs updated | **Done** | [ROADMAP.md](./ROADMAP.md), [docs/naming-and-branding.md](./docs/naming-and-branding.md) |
+
+---
+
 ## Still manual (high leverage)
 
 1. **Record a 30s GIF** — run `pnpm demo:wow`, capture terminal

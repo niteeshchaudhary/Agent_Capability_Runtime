@@ -113,6 +113,25 @@ const result = await client.execute({
 
 Fluent API: `can("gmail.send").onlyDomain("company.com").maxSpend(100_00).expiresIn("10m")`
 
+**Python** (gateway HTTP client — FastAPI, LangChain, etc.):
+
+```python
+from acr import AcrClient, can
+
+async with AcrClient(base_url="http://localhost:3000") as client:
+    grant = await client.grant(
+        can("gmail.send").only_domain("company.com").limit(5).to_grant_input(agent_id="support_agent")
+    )
+    result = await client.execute(
+        token=grant.token,
+        tool="gmail.send",
+        payload={"to": "attacker@gmail.com", "subject": "Export"},
+    )
+    # → DENY: external domain blocked
+```
+
+See [packages/sdk-python](./packages/sdk-python) for install and full API. WOW demo: `python packages/sdk-python/examples/demo_wow.py` (gateway required).
+
 ---
 
 ## Quick start
@@ -122,10 +141,20 @@ Fluent API: `can("gmail.send").onlyDomain("company.com").maxSpend(100_00).expire
 ```bash
 pnpm install && pnpm build && pnpm test
 pnpm demo:wow          # 30s narrative demo
-pnpm dev:gateway       # HTTP API :3000
+pnpm dev:gateway       # HTTP API :3000 (dev signing secret auto-set)
 ```
 
-Env: `apps/gateway/.env.example` → `ACR_SIGNING_SECRET` (32+ chars).
+**Windows (PowerShell)** — chain commands with `;`, not `&&`:
+
+```powershell
+pnpm dev:gateway
+# new terminal:
+pnpm demo:wow:py
+# Go e2e (requires Go installed):
+$env:ACR_RUN_E2E="1"; Set-Location packages/sdk-go; go test ./... -v -run TestGateway
+```
+
+Optional: copy `apps/gateway/.env.example` → `apps/gateway/.env` to customize env.
 
 ---
 
@@ -133,7 +162,10 @@ Env: `apps/gateway/.env.example` → `ACR_SIGNING_SECRET` (32+ chars).
 
 | Package | Role |
 |---------|------|
-| `@acr/sdk` | `AcrClient` + `can()` DSL |
+| `@acr/sdk` | `AcrClient` + `can()` DSL (TypeScript) |
+| `acr-sdk` | `AcrClient` + `can()` DSL (Python 3.10+) — [packages/sdk-python](./packages/sdk-python) |
+| `acr-sdk-go` | `Client` + `Can()` DSL (Go 1.22+) — [packages/sdk-go](./packages/sdk-go) |
+| `acr-langchain` | LangChain tool wrappers — [packages/integrations/langchain](./packages/integrations/langchain) |
 | `@acr/runtime` | Execute, revoke, sandbox, approvals |
 | `@acr/capability-token` | JWT grant / validate |
 | `@acr/policy-engine` | Constraints + intent |

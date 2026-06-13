@@ -58,6 +58,8 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 
 ## Packages
 
+### TypeScript (npm)
+
 | npm package | Role |
 |-------------|------|
 | `@acr/capability-token` | Grant and validate capability JWTs |
@@ -66,6 +68,16 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 | `@acr/adapters` | Tool adapters (Gmail, Slack, HTTP) |
 | `@acr/audit` | Audit event storage and query |
 | `@acr/sdk` | Client for gateway or in-process runtime |
+
+### Python / Go / LangChain
+
+| Package | Role | Doc |
+|---------|------|-----|
+| `acr-sdk` | Python HTTP client + `can()` DSL | [sdk-python README](../packages/sdk-python/README.md) |
+| `acr-sdk-go` | Go HTTP client + `Can()` DSL | [sdk-go README](../packages/sdk-go/README.md) |
+| `acr-langchain` | LangChain tool wrappers | [langchain README](../packages/integrations/langchain/README.md) |
+
+**Demos:** `pnpm demo:wow` (TS) · `python packages/sdk-python/examples/demo_wow.py` (Python, gateway required)
 
 **npm:** Packages may not be on the public registry yet — see [publishing.md](./publishing.md). Install from source:
 
