@@ -540,6 +540,25 @@ class AcrClient:
         data = resp.json()
         return [AuditEvent.model_validate(e) for e in data.get("events", [])]
 
+    async def verify_audit_chain(self) -> dict[str, Any]:
+        """Verify tamper-evident audit hash chain (async).
+
+        Returns gateway JSON — ``enabled: false`` when hash chain is not configured.
+        """
+        client = self._get_async_client()
+        resp = await client.get("/audit/verify")
+        if resp.status_code >= 400:
+            raise ExecuteError(f"Audit verify failed: {resp.status_code}")
+        return cast(dict[str, Any], resp.json())
+
+    def verify_audit_chain_sync(self) -> dict[str, Any]:
+        """Verify tamper-evident audit hash chain (sync)."""
+        client = self._get_sync_client()
+        resp = client.get("/audit/verify")
+        if resp.status_code >= 400:
+            raise ExecuteError(f"Audit verify failed: {resp.status_code}")
+        return cast(dict[str, Any], resp.json())
+
     # ── Health ───────────────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:

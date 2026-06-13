@@ -64,7 +64,29 @@ func main() {
 | `ListApprovals` | List approval requests |
 | `Approve` / `Reject` | Resolve approvals |
 | `ListAudit` | Query audit log |
+| `VerifyAuditChain` | Verify tamper-evident audit hash chain |
 | `Health` | Gateway health check |
+
+## Fluent DSL
+
+```go
+acr.Can("gmail.send").
+    OnlyDomain("company.com").
+    MaxSpend(10_000).
+    WhenIntent("customer_support").
+    Limit(5).
+    ExpiresIn("10m")
+
+acr.Can("http.request").
+    AllowedMethods("GET", "POST").
+    AllowedUrls("https://api.example.com")
+```
+
+## Gateway e2e
+
+```bash
+ACR_RUN_E2E=1 go test ./... -v -run TestGateway
+```
 
 ## Requirements
 

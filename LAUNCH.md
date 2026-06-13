@@ -33,7 +33,16 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 
 - [x] [docs/publishing.md](./docs/publishing.md) — not yet on npm unless published
 - [ ] Run `pnpm publish:packages` when ready for `@acr/sdk` on npm
+- [ ] Publish `acr-sdk` to PyPI (workflow: `.github/workflows/publish-python.yml`)
 - [ ] Tag release `v0.1.0` on GitHub after first publish
+
+## Multi-language SDKs
+
+- [x] Python SDK (`acr-sdk`) — [packages/sdk-python](./packages/sdk-python)
+- [x] Go SDK (`acr-sdk-go`) — [packages/sdk-go](./packages/sdk-go)
+- [x] LangChain integration — [packages/integrations/langchain](./packages/integrations/langchain)
+- [x] Python WOW demo — `python packages/sdk-python/examples/demo_wow.py` (gateway required)
+- [x] Gateway e2e in CI — Python + Go integration job
 
 ## Hosted demo
 
@@ -56,4 +65,11 @@ pnpm test
 pnpm demo:wow
 pnpm minimal
 pnpm benchmark
+
+# Python (gateway must be running for demo_wow)
+pip install -e packages/sdk-python
+python packages/sdk-python/examples/demo_wow.py
+
+# Go (unit tests; e2e via ACR_RUN_E2E=1 with gateway)
+cd packages/sdk-go && go test ./...
 ```

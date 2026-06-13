@@ -12,6 +12,10 @@ ACR is actively maintained. RFCs are **Stable 1.0.0**; the TypeScript implementa
 - [x] Sandbox v1 (timeout, SSRF guard, response cap)
 - [x] Optional signed audit hash chain
 - [x] Self-hosted gateway + Docker
+- [x] **TypeScript SDK** — `@acr/sdk` (HTTP + in-process `local` mode)
+- [x] **Python SDK** — `acr-sdk` (HTTP; async + sync) — [packages/sdk-python](../packages/sdk-python)
+- [x] **Go SDK** — `acr-sdk-go` (HTTP) — [packages/sdk-go](../packages/sdk-go)
+- [x] **LangChain integration** — `acr-langchain` tool wrappers — [packages/integrations/langchain](../packages/integrations/langchain)
 
 ## Next
 
@@ -20,11 +24,12 @@ ACR is actively maintained. RFCs are **Stable 1.0.0**; the TypeScript implementa
 - [ ] **Approval TTL** — separate expiry for pending approvals (independent of JWT `exp`)
 - [ ] **HTTP redirect revalidation** — block redirect chains to private IPs
 - [ ] **OpenTelemetry** — traces for grant / execute / policy / adapter
-- [ ] **npm publish** — `@acr/*` or documented alternate scope (see [docs/naming-and-branding.md](./docs/naming-and-branding.md))
+- [ ] **npm / PyPI publish** — `@acr/*`, `acr-sdk` (see [docs/naming-and-branding.md](./docs/naming-and-branding.md))
 
 ## Later
 
 - [ ] **Rust SDK** — embeddable runtime for edge / high-throughput gateways
+- [ ] **Python in-process runtime** — embed `@acr/runtime` equivalent without gateway
 - [ ] **Kubernetes admission** — validate agent workloads before tool sidecars run
 - [ ] **Webhooks** — approval and deny events to Slack / PagerDuty / SIEM
 - [ ] **Policy marketplace** — shareable constraint packs per tool

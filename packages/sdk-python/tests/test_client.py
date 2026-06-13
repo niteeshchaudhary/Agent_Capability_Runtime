@@ -447,3 +447,24 @@ class TestSyncClient:
         )
         assert isinstance(result, ExecuteSuccess)
         client.close()
+
+
+# ── Audit verify ─────────────────────────────────────────────────────────────
+
+
+class TestVerifyAuditChain:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_verify_audit_chain(self):
+        respx.get(f"{GATEWAY}/audit/verify").mock(
+            return_value=httpx.Response(
+                200,
+                json={"enabled": False, "valid": True, "message": "audit hash chain not enabled"},
+            )
+        )
+
+        async with AcrClient(base_url=GATEWAY) as client:
+            result = await client.verify_audit_chain()
+
+        assert result["enabled"] is False
+        assert result["valid"] is True

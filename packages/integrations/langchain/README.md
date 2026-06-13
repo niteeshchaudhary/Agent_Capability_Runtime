@@ -52,6 +52,8 @@ Start the gateway first: `pnpm dev:gateway`
 
 Use `simulate=True` (default) so ACR checks policy without replacing your tool logic (Playwright, custom HTTP, etc.).
 
+> **Note:** With `simulate=True`, an ALLOW decision runs policy only — your wrapped Python function still performs the work. For gateway-managed side effects (Gmail, Slack), call `client.execute(..., simulate=False)` directly.
+
 ## API
 
 | Symbol | Description |
@@ -63,9 +65,10 @@ Use `simulate=True` (default) so ACR checks policy without replacing your tool l
 | `guarded_tool()` | Decorator for new tools |
 | `AcrToolDeniedError` | Raised when `on_deny="raise"` |
 
-## myai example
+## Examples in this repo
 
-See the [myai](https://github.com/your-org/myai) reference app — set `ACR_ENABLED=true` in `.env`.
+- [packages/sdk-python/examples/quickstart.py](../../sdk-python/examples/quickstart.py)
+- [packages/sdk-python/examples/demo_wow.py](../../sdk-python/examples/demo_wow.py) — deny / approval / revoke narrative
 
 ## License
 

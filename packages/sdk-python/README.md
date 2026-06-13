@@ -110,6 +110,7 @@ can("gmail.send").allowed_hours(9, 17)
 | Approve | `client.approve(approval_id)` | `client.approve_sync(...)` |
 | Reject | `client.reject(approval_id)` | `client.reject_sync(...)` |
 | Audit log | `client.list_audit()` | `client.list_audit_sync()` |
+| Verify audit chain | `client.verify_audit_chain()` | `client.verify_audit_chain_sync()` |
 | Health check | `client.health()` | `client.health_sync()` |
 
 ## Admin Authentication
@@ -131,6 +132,7 @@ client = AcrClient(
 With the gateway running:
 
 ```bash
+python packages/sdk-python/examples/demo_wow.py   # deny / approval / revoke narrative
 python packages/sdk-python/examples/e2e_gateway.py
 # or
 ACR_RUN_E2E=1 pytest packages/sdk-python/tests/test_e2e_gateway.py -v

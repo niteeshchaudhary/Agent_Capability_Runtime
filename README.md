@@ -130,7 +130,7 @@ async with AcrClient(base_url="http://localhost:3000") as client:
     # → DENY: external domain blocked
 ```
 
-See [packages/sdk-python](./packages/sdk-python) for install and full API.
+See [packages/sdk-python](./packages/sdk-python) for install and full API. WOW demo: `python packages/sdk-python/examples/demo_wow.py` (gateway required).
 
 ---
 
@@ -141,10 +141,20 @@ See [packages/sdk-python](./packages/sdk-python) for install and full API.
 ```bash
 pnpm install && pnpm build && pnpm test
 pnpm demo:wow          # 30s narrative demo
-pnpm dev:gateway       # HTTP API :3000
+pnpm dev:gateway       # HTTP API :3000 (dev signing secret auto-set)
 ```
 
-Env: `apps/gateway/.env.example` → `ACR_SIGNING_SECRET` (32+ chars).
+**Windows (PowerShell)** — chain commands with `;`, not `&&`:
+
+```powershell
+pnpm dev:gateway
+# new terminal:
+pnpm demo:wow:py
+# Go e2e (requires Go installed):
+$env:ACR_RUN_E2E="1"; Set-Location packages/sdk-go; go test ./... -v -run TestGateway
+```
+
+Optional: copy `apps/gateway/.env.example` → `apps/gateway/.env` to customize env.
 
 ---
 

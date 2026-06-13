@@ -78,6 +78,28 @@ can("gmail.send")
 
 ---
 
+## LangChain / Python agent frameworks
+
+**Problem:** LangChain tools run locally; you need policy checks **before** side effects without rewriting every tool.
+
+**ACR:**
+
+```python
+from acr import can
+from acr_langchain import create_guard, wrap_tool
+
+guard = create_guard(base_url="http://localhost:3000", agent_id="my_agent")
+guard.ensure("http.request", can("http.request").where(method.in_(["GET"])).limit(20))
+
+guarded = wrap_tool(my_tool, guard=guard, acr_tool="http.request", simulate=True)
+```
+
+**Outcome:** DENY returns to the agent as tool output; ALLOW proceeds to your local implementation.
+
+See [packages/integrations/langchain](../packages/integrations/langchain).
+
+---
+
 ## When ACR is not the first priority
 
 - Single-user local scripts with no external tools
@@ -89,7 +111,8 @@ can("gmail.send")
 ## Next step
 
 ```bash
-pnpm demo:wow
+pnpm demo:wow                              # TypeScript
+python packages/sdk-python/examples/demo_wow.py   # Python (gateway required)
 ```
 
 [why-not-oauth.md](./why-not-oauth.md) · [getting-started.md](./getting-started.md)

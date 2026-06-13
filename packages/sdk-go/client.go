@@ -295,6 +295,22 @@ func (c *Client) ListAudit(ctx context.Context, query AuditQuery) ([]AuditEvent,
 	return data.Events, nil
 }
 
+// VerifyAuditChain checks the tamper-evident audit hash chain.
+func (c *Client) VerifyAuditChain(ctx context.Context) (map[string]any, error) {
+	resp, err := c.get(ctx, "/audit/verify", nil)
+	if err != nil {
+		return nil, fmt.Errorf("verify audit chain: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, fmt.Errorf("verify audit chain: unmarshal: %w", err)
+	}
+	return data, nil
+}
+
 // ── Health ──────────────────────────────────────────────────────────────────
 
 // Health checks gateway health.
