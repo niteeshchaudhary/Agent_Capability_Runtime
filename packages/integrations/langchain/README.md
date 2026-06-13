@@ -91,8 +91,8 @@ guarded = wrap_tool(
 
 | Backend | `protect()` default | Why |
 |---------|--------------------|-----|
-| Embedded | `simulate=False` | ALLOW just counts + audits (no adapters exist locally), so `limit()` is enforced |
-| Gateway | `simulate=True` | Policy-only check, so gateway adapters never run — your local function does the work |
+| Embedded | `simulate=False` | ALLOW counts + audits locally; `limit()` is enforced |
+| Gateway | `simulate=True` | Policy-only check — your local function performs the work |
 
 Override with `simulate=` if you need different behavior.
 
@@ -106,6 +106,11 @@ Override with `simulate=` if you need different behavior.
 | `wrap_tool()` / `wrap_tools()` | Wrap existing LangChain tools |
 | `guarded_tool()` | Decorator for new tools |
 | `AcrToolDeniedError` | Raised when `on_deny="raise"` |
+
+## Examples in this repo
+
+- [packages/sdk-python/examples/quickstart.py](../../sdk-python/examples/quickstart.py)
+- [packages/sdk-python/examples/demo_wow.py](../../sdk-python/examples/demo_wow.py) — deny / approval / revoke (no gateway)
 
 ## License
 

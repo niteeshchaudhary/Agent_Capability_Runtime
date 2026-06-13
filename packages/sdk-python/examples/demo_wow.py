@@ -2,6 +2,7 @@
 
     pip install -e packages/sdk-python
     python packages/sdk-python/examples/demo_wow.py
+    # or: pnpm demo:wow:py
 
 Optional production gateway mode:
 
@@ -148,7 +149,7 @@ async def main() -> None:
         await run_demo(client)
 
     print("\n  ✓ Demo complete")
-    print("  LangChain one-liner: from acr_langchain import protect")
+    print("  LangChain: from acr_langchain import protect")
     print("  Production: set ACR_GATEWAY_URL=http://your-gateway:3000\n")
 
 
@@ -159,4 +160,6 @@ if __name__ == "__main__":
         sys.exit(130)
     except Exception as exc:
         print(f"\n  ✗ Demo failed: {exc}", file=sys.stderr)
+        print("  Embedded mode: pip install -e packages/sdk-python && pnpm demo:wow:py", file=sys.stderr)
+        print("  Gateway mode:  pnpm dev:gateway + set ACR_GATEWAY_URL=http://localhost:3000\n", file=sys.stderr)
         sys.exit(1)

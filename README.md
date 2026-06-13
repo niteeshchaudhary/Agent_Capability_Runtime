@@ -71,7 +71,7 @@ pnpm install && pnpm build && pnpm demo:wow
 **Python (no server):**
 
 ```bash
-pip install -e packages/sdk-python && python packages/sdk-python/examples/demo_wow.py
+pip install -e packages/sdk-python && pnpm demo:wow:py
 ```
 
 DENY external email → REQUIRE_APPROVAL on spend → revoke mid-session.

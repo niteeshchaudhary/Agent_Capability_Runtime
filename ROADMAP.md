@@ -5,10 +5,10 @@ ACR is actively maintained. RFCs are **Stable 1.0.0**; implementations are **0.1
 ## Shipped (0.1.x)
 
 - [x] TypeScript runtime + `@acr/sdk` (embedded + gateway)
-- [x] Python `acr-sdk` — HTTP client + **`LocalAcrClient`** (embedded)
+- [x] Python `acr-sdk` — HTTP client + **`LocalAcrClient`** (embedded, zero setup)
 - [x] Go `acr-sdk-go` — HTTP client + `Can()` DSL
 - [x] LangChain **`protect()`** — one-call tool wrapping
-- [x] Self-hosted gateway + Docker
+- [x] Self-hosted gateway + Docker (zero-config dev signing secret)
 - [x] Revocation, approvals, consumption/idempotency, sandbox, audit chain (gateway)
 
 ## Next

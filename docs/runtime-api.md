@@ -323,7 +323,7 @@ async with AcrClient(base_url="http://localhost:3000") as client:
     )
 ```
 
-Install: `pip install -e packages/sdk-python` (PyPI publish pending). Sync wrappers: `grant_sync`, `execute_sync`, etc. See [packages/sdk-python/README.md](../packages/sdk-python/README.md).
+Install: `pip install -e packages/sdk-python` (PyPI publish pending). Sync wrappers: `grant_sync`, `execute_sync`, etc. Audit chain: `verify_audit_chain()`. See [packages/sdk-python/README.md](../packages/sdk-python/README.md).
 
 ---
 

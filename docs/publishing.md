@@ -68,6 +68,31 @@ twine check dist/*
 
 Requires `pypi` environment with trusted publisher configured.
 
+### Go module
+
+Module: **`github.com/agent-capability-runtime/acr-sdk-go`** (`packages/sdk-go`)
+
+| Package | Registry | Notes |
+|---------|----------|-------|
+| `acr-sdk-go` | GitHub releases / proxy.golang.org | Tag `v0.1.0` on repo; no separate publish step |
+
+Consumers:
+
+```bash
+go get github.com/agent-capability-runtime/acr-sdk-go@v0.1.0
+```
+
+### LangChain (`acr-langchain`)
+
+Install from monorepo until PyPI publish:
+
+```bash
+pip install -e packages/sdk-python
+pip install -e packages/integrations/langchain
+```
+
+Future: publish `acr-langchain` to PyPI after `acr-sdk` is live.
+
 ## Versioning policy (target)
 
 | Tag | Meaning |

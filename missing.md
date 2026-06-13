@@ -103,12 +103,15 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 
 ---
 
-## Plug and play / easy integration (`acr-easy-use`)
+## Multi-language SDKs + plug and play
 
 | Item | Status | Where |
 |------|--------|--------|
+| Python SDK (`acr-sdk`) | **Done** | [packages/sdk-python](./packages/sdk-python) |
 | `LocalAcrClient` (zero infra) | **Done** | [packages/sdk-python/acr/local.py](./packages/sdk-python/acr/local.py) |
-| `create_client()` auto backend | **Done** | env `ACR_GATEWAY_URL` → gateway, else embedded |
+| `create_client()` auto backend | **Done** | `ACR_GATEWAY_URL` → gateway, else embedded |
+| Go SDK (`acr-sdk-go`) | **Done** | [packages/sdk-go](./packages/sdk-go) |
+| Go DSL parity (intent, HTTP) | **Done** | [packages/sdk-go/dsl.go](./packages/sdk-go/dsl.go) |
 | LangChain `protect()` one-liner | **Done** | [packages/integrations/langchain](./packages/integrations/langchain) |
 | Python `demo_wow.py` (no gateway) | **Done** | `pnpm demo:wow:py` |
 | Gateway dev zero-config | **Done** | auto dev `ACR_SIGNING_SECRET` + `.env` load |
@@ -116,7 +119,8 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 | Plug-and-play guide | **Done** | [docs/plug-and-play.md](./docs/plug-and-play.md) |
 | Embedded vs gateway doc | **Done** | [docs/embedded-vs-gateway.md](./docs/embedded-vs-gateway.md) |
 | Local `requestId` idempotency | **Done** | `test_local.py` |
-| Go gateway e2e in CI | **Done** | `packages/sdk-go/e2e_gateway_test.go` |
+| Gateway e2e CI (Python + Go) | **Done** | `.github/workflows/ci.yml` |
+| PyPI publish workflow | **Done** | `.github/workflows/publish-python.yml` |
 
 ---
 

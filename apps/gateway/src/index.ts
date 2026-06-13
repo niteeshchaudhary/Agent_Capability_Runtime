@@ -11,6 +11,7 @@ import { createAgentCapabilityRuntime } from "@acr/runtime";
 import { parseAdminApiKeysFromEnv } from "./admin-auth.js";
 import { createApp, GATEWAY_VERSION } from "./app.js";
 
+/** Matches apps/gateway/.env.example — local dev only. */
 const DEV_SIGNING_SECRET = "dev-secret-change-in-production-32b-minimum";
 
 function loadLocalEnvFile(): void {
@@ -41,7 +42,7 @@ loadLocalEnvFile();
 if (!process.env.ACR_SIGNING_SECRET && process.env.NODE_ENV !== "production") {
   process.env.ACR_SIGNING_SECRET = DEV_SIGNING_SECRET;
   console.warn(
-    "ACR_SIGNING_SECRET not set — using dev default. Set in apps/gateway/.env for production.",
+    "ACR_SIGNING_SECRET not set — using dev default. Copy apps/gateway/.env.example to .env for production.",
   );
 }
 
