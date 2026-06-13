@@ -159,6 +159,17 @@ def _evaluate_constraints(
     return conditions, None
 
 
+def _payload_matches(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    return json.dumps(a, sort_keys=True, default=str) == json.dumps(b, sort_keys=True, default=str)
+
+
+def _spend_amount_cents(payload: dict[str, Any]) -> int | None:
+    amount = payload.get("amountCents", payload.get("amount"))
+    if isinstance(amount, (int, float)) and not isinstance(amount, bool):
+        return int(amount)
+    return None
+
+
 class LocalAcrClient:
     """In-process ACR runtime with the same surface as ``AcrClient``.
 
@@ -181,6 +192,7 @@ class LocalAcrClient:
         self._audit_path = audit_path or os.environ.get("ACR_AUDIT_PATH")
         self._revoked: set[str] = set()
         self._actions: dict[str, int] = {}
+        self._completed_requests: dict[str, set[str]] = {}
         self._approvals: dict[str, dict[str, Any]] = {}
         self._audit: list[dict[str, Any]] = []
         self._audit_counter = 0
@@ -279,6 +291,17 @@ class LocalAcrClient:
                 "evaluatedConditions": conditions,
             })
 
+        if request_id:
+            seen = self._completed_requests.setdefault(jti, set())
+            if request_id in seen:
+                audit_id = self._record(
+                    agent_id, tool, "ALLOW", "idempotent replay — request already consumed", payload
+                )
+                return ExecuteSuccess.model_validate({
+                    "auditId": audit_id,
+                    "result": {"status": "replay", "requestId": request_id},
+                })
+
         max_actions = constraints.get("maxActions")
         used = self._actions.get(jti, 0)
         if isinstance(max_actions, int) and used >= max_actions:
@@ -290,11 +313,11 @@ class LocalAcrClient:
 
         approval_reason = self._approval_gate(constraints, payload)
         if approval_reason is not None:
-            resolved = self._resolve_approval(approval_id, jti)
+            resolved = self._resolve_approval(approval_id, jti, tool, payload)
             if resolved is not None:
-                return resolved if isinstance(resolved, ExecuteDenied) else self._allow(
-                    agent_id, tool, payload, jti
-                )
+                if isinstance(resolved, ExecuteDenied):
+                    return resolved
+                return self._allow(agent_id, tool, payload, jti, request_id)
             appr_id = f"appr_{uuid.uuid4().hex[:12]}"
             self._approvals[appr_id] = {
                 "id": appr_id,
@@ -312,7 +335,7 @@ class LocalAcrClient:
                 "approvalId": appr_id,
             })
 
-        return self._allow(agent_id, tool, payload, jti)
+        return self._allow(agent_id, tool, payload, jti, request_id)
 
     def _approval_gate(self, constraints: dict[str, Any], payload: dict[str, Any]) -> str | None:
         """Return a reason string when execution needs human approval."""
@@ -320,14 +343,19 @@ class LocalAcrClient:
             return "approval required by policy"
         limit = constraints.get("spendingLimit")
         if isinstance(limit, int):
-            amount = payload.get("amountCents", payload.get("amount"))
-            if isinstance(amount, (int, float)) and not isinstance(amount, bool):
-                if amount > limit:
-                    return f"spend {amount} exceeds limit {limit}"
+            amount = _spend_amount_cents(payload)
+            if amount is not None and amount > limit:
+                dollars = amount / 100
+                limit_dollars = limit / 100
+                return f"spending ${dollars:.2f} exceeds limit ${limit_dollars:.2f} — approval required"
         return None
 
     def _resolve_approval(
-        self, approval_id: str | None, jti: str
+        self,
+        approval_id: str | None,
+        jti: str,
+        tool: str,
+        payload: dict[str, Any],
     ) -> ExecuteDenied | bool | None:
         """Check a supplied approval id. True = approved; ExecuteDenied = hard stop;
         None = no usable approval (caller creates a pending one)."""
@@ -336,6 +364,16 @@ class LocalAcrClient:
         record = self._approvals.get(approval_id)
         if record is None or record.get("jti") != jti:
             return None
+        if record.get("tool") != tool or not _payload_matches(
+            record.get("payload", {}), payload
+        ):
+            return self._deny(
+                str(record.get("agentId", "")),
+                tool,
+                payload,
+                "approval does not match execute request",
+                "policy_denied",
+            )
         status = record.get("status")
         if status == "approved":
             record["status"] = "consumed"
@@ -353,8 +391,15 @@ class LocalAcrClient:
         return None
 
     def _allow(
-        self, agent_id: str, tool: str, payload: dict[str, Any], jti: str
+        self,
+        agent_id: str,
+        tool: str,
+        payload: dict[str, Any],
+        jti: str,
+        request_id: str | None = None,
     ) -> ExecuteSuccess:
+        if request_id:
+            self._completed_requests.setdefault(jti, set()).add(request_id)
         self._actions[jti] = self._actions.get(jti, 0) + 1
         audit_id = self._record(agent_id, tool, "ALLOW", None, payload)
         return ExecuteSuccess.model_validate({

@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { loadAdapterConfigFromEnv } from "@acr/adapters";
 import {
@@ -7,6 +10,40 @@ import {
 import { createAgentCapabilityRuntime } from "@acr/runtime";
 import { parseAdminApiKeysFromEnv } from "./admin-auth.js";
 import { createApp, GATEWAY_VERSION } from "./app.js";
+
+const DEV_SIGNING_SECRET = "dev-secret-change-in-production-32b-minimum";
+
+function loadLocalEnvFile(): void {
+  const envPath = resolve(dirname(fileURLToPath(import.meta.url)), "../.env");
+  if (!existsSync(envPath)) return;
+
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadLocalEnvFile();
+
+if (!process.env.ACR_SIGNING_SECRET && process.env.NODE_ENV !== "production") {
+  process.env.ACR_SIGNING_SECRET = DEV_SIGNING_SECRET;
+  console.warn(
+    "ACR_SIGNING_SECRET not set — using dev default. Set in apps/gateway/.env for production.",
+  );
+}
 
 const PORT = Number(process.env.PORT ?? 3000);
 

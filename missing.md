@@ -103,6 +103,23 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 
 ---
 
+## Plug and play / easy integration (`acr-easy-use`)
+
+| Item | Status | Where |
+|------|--------|--------|
+| `LocalAcrClient` (zero infra) | **Done** | [packages/sdk-python/acr/local.py](./packages/sdk-python/acr/local.py) |
+| `create_client()` auto backend | **Done** | env `ACR_GATEWAY_URL` → gateway, else embedded |
+| LangChain `protect()` one-liner | **Done** | [packages/integrations/langchain](./packages/integrations/langchain) |
+| Python `demo_wow.py` (no gateway) | **Done** | `pnpm demo:wow:py` |
+| Gateway dev zero-config | **Done** | auto dev `ACR_SIGNING_SECRET` + `.env` load |
+| `pnpm setup:gateway` | **Done** | copies `.env.example` |
+| Plug-and-play guide | **Done** | [docs/plug-and-play.md](./docs/plug-and-play.md) |
+| Embedded vs gateway doc | **Done** | [docs/embedded-vs-gateway.md](./docs/embedded-vs-gateway.md) |
+| Local `requestId` idempotency | **Done** | `test_local.py` |
+| Go gateway e2e in CI | **Done** | `packages/sdk-go/e2e_gateway_test.go` |
+
+---
+
 ## Still manual (high leverage)
 
 1. **Record a 30s GIF** — run `pnpm demo:wow`, capture terminal

@@ -194,6 +194,37 @@ class TestApprovals:
         )
         assert isinstance(result, ExecuteApprovalRequired)
 
+    def test_request_id_idempotent_replay(self):
+        client = LocalAcrClient()
+        grant = _grant(client, can("gmail.send").only_domain("co.com").limit(5))
+        payload = {"to": "a@co.com"}
+        first = client.execute_sync(
+            token=grant.token, tool="gmail.send", payload=payload, request_id="req_1"
+        )
+        second = client.execute_sync(
+            token=grant.token, tool="gmail.send", payload=payload, request_id="req_1"
+        )
+        assert isinstance(first, ExecuteSuccess)
+        assert isinstance(second, ExecuteSuccess)
+        assert second.result is not None and second.result.get("status") == "replay"
+        assert client._actions[grant.claims.jti or ""] == 1
+
+    def test_approval_payload_mismatch_denied(self):
+        client = LocalAcrClient()
+        grant = _grant(client, can("gmail.send").require_approval())
+        pending = client.execute_sync(
+            token=grant.token, tool="gmail.send", payload={"to": "a@co.com"}
+        )
+        assert isinstance(pending, ExecuteApprovalRequired)
+        client.approve_sync(pending.approval_id)
+        result = client.execute_sync(
+            token=grant.token,
+            tool="gmail.send",
+            payload={"to": "other@co.com"},
+            approval_id=pending.approval_id,
+        )
+        assert isinstance(result, ExecuteDenied)
+
 
 class TestAuditAndHealth:
     def test_audit_records_decisions(self):

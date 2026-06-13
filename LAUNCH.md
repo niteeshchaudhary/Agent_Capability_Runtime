@@ -50,10 +50,9 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 ## Verify before announce
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+pnpm install && pnpm build && pnpm test
 pnpm demo:wow
-pnpm minimal
-pnpm benchmark
+pnpm demo:wow:py          # Python embedded — no gateway
+pnpm minimal && pnpm benchmark
+pnpm dev:gateway          # optional gateway smoke test
 ```
