@@ -171,6 +171,20 @@ tools = protect(my_tools, agent_id="my_agent", policy=can("http.request").limit(
 
 See [packages/integrations/langchain](../integrations/langchain).
 
+## Query scope guard (pre-LLM)
+
+Block off-topic prompts before they reach your model — zero LLM cost:
+
+```python
+from acr.scope import QueryScopeGuard
+
+guard = QueryScopeGuard.from_dict({...})
+if refusal := guard.check_or_refuse(user_message):
+    return refusal
+```
+
+See [query-scope-guard.md](../../docs/query-scope-guard.md).
+
 ## Requirements
 
 - Python 3.10+

@@ -4,6 +4,7 @@ from acr.client import AcrClient
 from acr.dsl import can, domain, method, url, hours, intent, PolicyBuilder
 from acr.exceptions import AcrError, GrantError, ExecuteError, ApprovalError
 from acr.local import LocalAcrClient, create_client
+from acr.scope import QueryScopeGuard, QueryScopeConfig, ScopeResult, TopicRule
 from acr.models import (
     ConstraintSet,
     ExecuteInput,
@@ -26,6 +27,11 @@ __all__ = [
     "AcrClient",
     "LocalAcrClient",
     "create_client",
+    # Query scope (pre-LLM)
+    "QueryScopeGuard",
+    "QueryScopeConfig",
+    "ScopeResult",
+    "TopicRule",
     # DSL
     "can",
     "domain",

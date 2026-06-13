@@ -82,6 +82,19 @@ acr.Can("http.request").
     AllowedUrls("https://api.example.com")
 ```
 
+## Query scope guard (pre-LLM)
+
+Block off-topic user prompts before they reach your model — zero LLM cost:
+
+```go
+guard, _ := acr.FromScopeConfig(acr.QueryScopeConfigInput{ /* ... */ })
+if refusal := guard.CheckOrRefuse(userMessage); refusal != "" {
+    return refusal
+}
+```
+
+See [query-scope-guard.md](../../docs/query-scope-guard.md).
+
 ## Gateway e2e
 
 ```bash
