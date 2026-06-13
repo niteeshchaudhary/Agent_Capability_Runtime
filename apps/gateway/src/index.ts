@@ -42,7 +42,7 @@ loadLocalEnvFile();
 if (!process.env.ACR_SIGNING_SECRET && process.env.NODE_ENV !== "production") {
   process.env.ACR_SIGNING_SECRET = DEV_SIGNING_SECRET;
   console.warn(
-    "ACR_SIGNING_SECRET not set — using built-in dev default. Copy apps/gateway/.env.example to .env or set ACR_SIGNING_SECRET in production.",
+    "ACR_SIGNING_SECRET not set — using dev default. Copy apps/gateway/.env.example to .env for production.",
   );
 }
 

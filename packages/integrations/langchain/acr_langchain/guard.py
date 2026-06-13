@@ -2,21 +2,48 @@
 
 from __future__ import annotations
 
+from typing import Any, Protocol
+
 from acr.client import AcrClient
 from acr.dsl import PolicyBuilder
-from acr.models import GrantResponse
+from acr.models import ExecuteResult, GrantResponse
+
+
+class AcrClientLike(Protocol):
+    """Any backend with the sync grant/execute surface.
+
+    Satisfied by both ``acr.AcrClient`` (HTTP gateway) and
+    ``acr.LocalAcrClient`` (embedded, zero-infrastructure runtime).
+    """
+
+    def grant_sync(self, input: dict[str, Any]) -> GrantResponse: ...
+
+    def execute_sync(
+        self,
+        *,
+        token: str,
+        tool: str,
+        payload: dict[str, Any],
+        approval_id: str | None = None,
+        request_id: str | None = None,
+        trace_id: str | None = None,
+        session_id: str | None = None,
+        intent: str | dict[str, Any] | None = None,
+        simulate: bool | None = None,
+    ) -> ExecuteResult: ...
 
 
 class CapabilityGuard:
     """Grants and caches capability tokens for an agent session.
 
     Use one guard per agent process. Call ``ensure()`` for each ACR tool policy
-    before wrapping LangChain tools.
+    before wrapping LangChain tools. Works with either the HTTP gateway client
+    or the embedded ``LocalAcrClient``.
     """
 
     def __init__(
         self,
-        client: AcrClient,
+        client: AcrClientLike,
         *,
         agent_id: str,
     ) -> None:
@@ -25,7 +52,7 @@ class CapabilityGuard:
         self._tokens: dict[str, str] = {}
 
     @property
-    def client(self) -> AcrClient:
+    def client(self) -> AcrClientLike:
         return self._client
 
     @property

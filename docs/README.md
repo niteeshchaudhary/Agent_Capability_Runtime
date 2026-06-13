@@ -19,7 +19,8 @@ Formal, normative protocol definitions ([STABLE.md](./rfc/STABLE.md)):
 
 | Doc | Description |
 |-----|-------------|
-| [Overview](./overview.md) | Extended README (architecture, perf, monorepo) |
+| **[Plug and play](./plug-and-play.md)** | **Integrate in minutes — start here** |
+| [Embedded vs gateway](./embedded-vs-gateway.md) | Dev vs production runtime |
 | [Comparison](./comparison.md) | OAuth vs API gateway vs ACR table |
 | [Who is this NOT for](./who-is-this-not-for.md) | When to skip ACR |
 | [Use cases](./use-cases.md) | Who should adopt ACR today |

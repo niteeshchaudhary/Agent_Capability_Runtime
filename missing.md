@@ -103,18 +103,24 @@ Subtitle: *We built runtime capability enforcement — not broader scopes, but p
 
 ---
 
-## Multi-language SDKs (`sdksupport` branch)
+## Multi-language SDKs + plug and play
 
 | Item | Status | Where |
 |------|--------|--------|
 | Python SDK (`acr-sdk`) | **Done** | [packages/sdk-python](./packages/sdk-python) |
+| `LocalAcrClient` (zero infra) | **Done** | [packages/sdk-python/acr/local.py](./packages/sdk-python/acr/local.py) |
+| `create_client()` auto backend | **Done** | `ACR_GATEWAY_URL` → gateway, else embedded |
 | Go SDK (`acr-sdk-go`) | **Done** | [packages/sdk-go](./packages/sdk-go) |
-| LangChain integration | **Done** | [packages/integrations/langchain](./packages/integrations/langchain) |
-| Python `demo_wow.py` | **Done** | `python packages/sdk-python/examples/demo_wow.py` |
 | Go DSL parity (intent, HTTP) | **Done** | [packages/sdk-go/dsl.go](./packages/sdk-go/dsl.go) |
-| Gateway e2e CI (Python + Go) | **Done** | `.github/workflows/ci.yml` integration job |
+| LangChain `protect()` one-liner | **Done** | [packages/integrations/langchain](./packages/integrations/langchain) |
+| Python `demo_wow.py` (no gateway) | **Done** | `pnpm demo:wow:py` |
+| Gateway dev zero-config | **Done** | auto dev `ACR_SIGNING_SECRET` + `.env` load |
+| `pnpm setup:gateway` | **Done** | copies `.env.example` |
+| Plug-and-play guide | **Done** | [docs/plug-and-play.md](./docs/plug-and-play.md) |
+| Embedded vs gateway doc | **Done** | [docs/embedded-vs-gateway.md](./docs/embedded-vs-gateway.md) |
+| Local `requestId` idempotency | **Done** | `test_local.py` |
+| Gateway e2e CI (Python + Go) | **Done** | `.github/workflows/ci.yml` |
 | PyPI publish workflow | **Done** | `.github/workflows/publish-python.yml` |
-| Roadmap / naming docs updated | **Done** | [ROADMAP.md](./ROADMAP.md), [docs/naming-and-branding.md](./docs/naming-and-branding.md) |
 
 ---
 

@@ -1,39 +1,32 @@
-# Roadmap
+# Open source roadmap
 
-ACR is actively maintained. RFCs are **Stable 1.0.0**; the TypeScript implementation is **0.1.x alpha** — we ship incrementally toward **v1.0.0**.
+ACR is actively maintained. RFCs are **Stable 1.0.0**; implementations are **0.1.x alpha** toward **v1.0.0**.
 
-## Now (0.1.x)
+## Shipped (0.1.x)
 
-- [x] Capability JWT grant / validate (HS256, RS256, EdDSA)
-- [x] Runtime execute pipeline (ALLOW / DENY / REQUIRE_APPROVAL / SIMULATE)
-- [x] Fluent `can()` policy DSL + intent-aware rules
-- [x] Revocation (in-memory + optional Redis)
-- [x] Consumption ledger + `requestId` idempotency
-- [x] Sandbox v1 (timeout, SSRF guard, response cap)
-- [x] Optional signed audit hash chain
-- [x] Self-hosted gateway + Docker
-- [x] **TypeScript SDK** — `@acr/sdk` (HTTP + in-process `local` mode)
-- [x] **Python SDK** — `acr-sdk` (HTTP; async + sync) — [packages/sdk-python](../packages/sdk-python)
-- [x] **Go SDK** — `acr-sdk-go` (HTTP) — [packages/sdk-go](../packages/sdk-go)
-- [x] **LangChain integration** — `acr-langchain` tool wrappers — [packages/integrations/langchain](../packages/integrations/langchain)
+- [x] TypeScript runtime + `@acr/sdk` (embedded + gateway)
+- [x] Python `acr-sdk` — HTTP client + **`LocalAcrClient`** (embedded, zero setup)
+- [x] Go `acr-sdk-go` — HTTP client + `Can()` DSL
+- [x] LangChain **`protect()`** — one-call tool wrapping
+- [x] Self-hosted gateway + Docker (zero-config dev signing secret)
+- [x] Revocation, approvals, consumption/idempotency, sandbox, audit chain (gateway)
 
 ## Next
 
-- [ ] **Hosted dashboard** — grant, execute, audit, approve in a browser UI
-- [ ] **OPA / Rego integration** — external policy bundles alongside native AST
-- [ ] **Approval TTL** — separate expiry for pending approvals (independent of JWT `exp`)
-- [ ] **HTTP redirect revalidation** — block redirect chains to private IPs
-- [ ] **OpenTelemetry** — traces for grant / execute / policy / adapter
-- [ ] **npm / PyPI publish** — `@acr/*`, `acr-sdk` (see [docs/naming-and-branding.md](./docs/naming-and-branding.md))
+- [ ] **Hosted dashboard** — grant, execute, audit, approve in browser
+- [ ] **OPA / Rego** — external policy bundles
+- [ ] **Approval TTL** — separate from JWT `exp`
+- [ ] **HTTP redirect revalidation** — SSRF hardening
+- [ ] **OpenTelemetry** — grant / execute traces
+- [ ] **npm / PyPI publish** — `@acr/sdk`, `acr-sdk`, `acr-langchain`
 
 ## Later
 
-- [ ] **Rust SDK** — embeddable runtime for edge / high-throughput gateways
-- [ ] **Python in-process runtime** — embed `@acr/runtime` equivalent without gateway
-- [ ] **Kubernetes admission** — validate agent workloads before tool sidecars run
-- [ ] **Webhooks** — approval and deny events to Slack / PagerDuty / SIEM
-- [ ] **Policy marketplace** — shareable constraint packs per tool
+- [ ] **Rust SDK**
+- [ ] **Kubernetes admission**
+- [ ] **Webhooks** — approval/deny to Slack/PagerDuty
+- [ ] **Policy marketplace**
 
-## How to influence
+## Plug and play today
 
-Open a [Discussion](https://github.com/agent-capability-runtime/Agent_Capability_Runtime/discussions) or issue with the `roadmap` label. PRs welcome for items marked in **Next** when aligned with RFCs.
+See [docs/plug-and-play.md](./docs/plug-and-play.md).

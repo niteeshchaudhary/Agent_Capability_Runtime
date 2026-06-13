@@ -18,14 +18,11 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 - [x] Comparison table — [docs/comparison.md](./docs/comparison.md)
 - [x] Who is this NOT for — [docs/who-is-this-not-for.md](./docs/who-is-this-not-for.md)
 - [x] Roadmap — [ROADMAP.md](./ROADMAP.md)
-- [x] README trimmed — deep sections in [docs/overview.md](./docs/overview.md)
+- [x] Plug and play guide — [docs/plug-and-play.md](./docs/plug-and-play.md)
 - [x] Security verification checklist — [docs/security-verification.md](./docs/security-verification.md)
 - [x] Naming checklist — [docs/naming-and-branding.md](./docs/naming-and-branding.md)
 - [ ] Terminal GIF or asciinema — [docs/recording-demo.md](./docs/recording-demo.md)
 - [ ] Terminal screenshot — optional `docs/assets/demo-wow.png`
-- [x] [docs/use-cases.md](./docs/use-cases.md) — who should adopt today
-- [x] [docs/why-not-oauth.md](./docs/why-not-oauth.md) — positioning moat
-- [x] [docs/threat-stories.md](./docs/threat-stories.md) — narrative security stories
 - [x] Minimal example — `pnpm minimal` / [examples/minimal.ts](./examples/minimal.ts)
 - [x] [docs/benchmarks.md](./docs/benchmarks.md) — `pnpm benchmark`
 
@@ -38,10 +35,10 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 
 ## Multi-language SDKs
 
-- [x] Python SDK (`acr-sdk`) — [packages/sdk-python](./packages/sdk-python)
+- [x] Python SDK (`acr-sdk`) + `LocalAcrClient` — [packages/sdk-python](./packages/sdk-python)
 - [x] Go SDK (`acr-sdk-go`) — [packages/sdk-go](./packages/sdk-go)
-- [x] LangChain integration — [packages/integrations/langchain](./packages/integrations/langchain)
-- [x] Python WOW demo — `python packages/sdk-python/examples/demo_wow.py` (gateway required)
+- [x] LangChain `protect()` — [packages/integrations/langchain](./packages/integrations/langchain)
+- [x] Python WOW demo — `pnpm demo:wow:py` (embedded, no gateway)
 - [x] Gateway e2e in CI — Python + Go integration job
 
 ## Hosted demo
@@ -59,17 +56,12 @@ Use this before promoting ACR publicly (Hacker News, Product Hunt, social, confe
 ## Verify before announce
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+pnpm install && pnpm build && pnpm test
 pnpm demo:wow
-pnpm minimal
-pnpm benchmark
+pnpm demo:wow:py          # Python embedded — no gateway
+pnpm minimal && pnpm benchmark
+pnpm dev:gateway          # optional gateway smoke test
 
-# Python (gateway must be running for demo_wow)
-pip install -e packages/sdk-python
-python packages/sdk-python/examples/demo_wow.py
-
-# Go (unit tests; e2e via ACR_RUN_E2E=1 with gateway)
-cd packages/sdk-go && go test ./...
+# Go e2e (gateway must be running)
+$env:ACR_RUN_E2E="1"; Set-Location packages/sdk-go; go test ./... -run TestGateway
 ```

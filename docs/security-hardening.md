@@ -75,3 +75,16 @@ Sandbox v1 blocks (when `ACR_SANDBOX_BLOCK_PRIVATE=true`, default):
 ## Reporting issues
 
 See [SECURITY.md](../SECURITY.md).
+
+## Embedded Python runtime (`LocalAcrClient`)
+
+Used by `create_client()` and LangChain `protect()` when no gateway is configured.
+
+| Topic | Embedded | Gateway |
+|-------|----------|---------|
+| Scope | Single Python process | Multi-service / multi-agent |
+| Revocation propagation | In-memory only | Redis optional |
+| Live adapters + SSRF sandbox | N/A | ✅ |
+| Production signing | Set `ACR_SIGNING_SECRET` (≥32 chars) | Required + `ACR_ADMIN_API_KEY` |
+
+See [embedded-vs-gateway.md](./embedded-vs-gateway.md).

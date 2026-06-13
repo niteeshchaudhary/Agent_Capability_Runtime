@@ -53,6 +53,7 @@ jobs:
           ruff check acr tests
           mypy acr
           pytest -v -m "not e2e"
+          python examples/demo_wow.py
 
       - name: Install and test LangChain integration
         run: |
@@ -123,7 +124,6 @@ jobs:
           python -m pip install -e ".[dev]"
           pytest -v -m e2e
           python examples/e2e_gateway.py
-          python examples/demo_wow.py
 
       - uses: actions/setup-go@v5
         with:
