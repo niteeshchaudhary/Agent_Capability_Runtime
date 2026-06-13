@@ -27,6 +27,8 @@ import {
   evaluatePolicyAst,
   PolicyVersionRegistry,
   compilePolicyVersioned,
+  OpaPolicyBackend,
+  buildOpaInputFromClaims,
 } from "@acr/policy-engine";
 import { ConsumptionLedger } from "./consumption/consumption-ledger.js";
 import type { ConsumptionStore } from "./consumption/types.js";
@@ -125,6 +127,7 @@ export class AgentCapabilityRuntime {
   private readonly config: RuntimeConfig;
   private readonly sandbox: ReturnType<typeof resolveSandboxConfig>;
   private readonly signingMaterial: SigningMaterial;
+  private readonly opaBackend: OpaPolicyBackend | null;
 
   constructor(
     config: RuntimeConfig,
@@ -164,6 +167,7 @@ export class AgentCapabilityRuntime {
     this.adapters = createAdapterRegistry(
       config.adapters ?? { mode: "stub" },
     );
+    this.opaBackend = config.opa ? new OpaPolicyBackend(config.opa) : null;
   }
 
   private signerOptions() {
@@ -485,6 +489,66 @@ export class AgentCapabilityRuntime {
         approvalId: approval.id,
         executionPhase: "APPROVAL_REQUIRED",
       };
+    }
+
+    if (this.opaBackend?.enabled) {
+      const opaResult = await this.opaBackend.evaluate(
+        buildOpaInputFromClaims(claims, {
+          payload,
+          constraints,
+          actionCount,
+          approvalGranted: options?.approvalGranted,
+          simulate: options?.simulate ?? policy.decision === "SIMULATE",
+          intent,
+          policyVersionId: policyDoc.policyVersionId,
+        }),
+      );
+
+      if (!opaResult.allowed && !opaResult.shadowOnly) {
+        if (opaResult.decision === "REQUIRE_APPROVAL") {
+          touchSession("APPROVAL_REQUIRED");
+          const audit = this.audit.record({
+            ...baseAudit,
+            decision: "REQUIRE_APPROVAL",
+            reason: opaResult.reason ?? "OPA policy requires approval",
+            executionPhase: "APPROVAL_REQUIRED",
+          });
+          const approval = this.approvals.create({
+            agentId: claims.sub,
+            tool,
+            token: options?.token ?? "",
+            payload,
+            reason: opaResult.reason ?? "OPA policy requires approval",
+            auditId: audit.id,
+            jti: claims.jti,
+          });
+          await this.config.onApprovalRequired?.(approval);
+          return {
+            ok: false,
+            decision: "REQUIRE_APPROVAL",
+            reason: opaResult.reason ?? "OPA policy requires approval",
+            auditId: audit.id,
+            approvalId: approval.id,
+            executionPhase: "APPROVAL_REQUIRED",
+          };
+        }
+
+        touchSession("DENIED");
+        const audit = this.audit.record({
+          ...baseAudit,
+          decision: "DENY",
+          reason: opaResult.reason ?? "denied by OPA policy",
+          executionPhase: "DENIED",
+        });
+        return {
+          ok: false,
+          decision: "DENY",
+          reason: opaResult.reason ?? "denied by OPA policy",
+          auditId: audit.id,
+          code: "policy_denied",
+          executionPhase: "DENIED",
+        };
+      }
     }
 
     if (policy.decision === "SIMULATE" || options?.simulate) {

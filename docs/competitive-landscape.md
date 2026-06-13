@@ -124,10 +124,10 @@ Examples: [Sentinel MCP Gateway](https://github.com/wallybrain/sentinel-mcp-gate
 
 | Market expectation | Status in ACR | Plan |
 |--------------------|---------------|------|
-| OPA/Rego/Cedar policy bundles | Custom `can()` DSL only | [ROADMAP](../ROADMAP.md) — OPA/Rego |
+| OPA/Rego/Cedar policy bundles | Custom `can()` DSL + **OPA/Rego backend** | [opa-rego-backend.md](./opa-rego-backend.md) |
 | Standalone MCP proxy (stdio/HTTP) | Guard library only | MCP proxy server |
 | MCP tool poisoning scanner | Not shipped | Tool description scanner |
-| Enterprise dashboard + approvals UI | HTTP API only | Hosted dashboard |
+| Enterprise dashboard + approvals UI | **`/dashboard/`** on gateway | Shipped |
 | Observe → shadow → enforce fleet rollout | MCP `mode: shadow` + execute `simulate` | Broader shadow mode docs |
 | OpenTelemetry / Prometheus | Not shipped | OTel on roadmap |
 | Agent identity / trust scoring | `agent_id` string | Later — see [agent-identity-auth-synthesis.md](../agent-identity-auth-synthesis.md) |
@@ -181,9 +181,9 @@ Aligned with [ROADMAP](../ROADMAP.md):
 
 | Priority | Item | Closes gap with | Status |
 |----------|------|-----------------|--------|
-| **P0** | MCP proxy server | Sentinel, AgentWard, AGT | ✅ `acr-mcp-proxy` stdio process shipped; HTTP/SSE next |
-| **P0** | OPA/Rego backend | AGT, StrongDM/Cedar shops | ⬜ planned |
-| **P1** | Admin dashboard | AGT, MCP gateways | ⬜ planned |
+| **P0** | MCP proxy server | Sentinel, AgentWard, AGT | ✅ stdio + SSE + Streamable HTTP shipped |
+| **P0** | OPA/Rego backend | AGT, StrongDM/Cedar shops | ✅ HTTP + local bundle + shadow mode |
+| **P1** | Admin dashboard | AGT, MCP gateways | ✅ `/dashboard/` UI shipped |
 | **P1** | OpenTelemetry | Enterprise ops | ⬜ planned |
 | **P2** | MCP tool scanner | AgentWard, AGT | ✅ `McpToolScanner` shipped |
 | **P2** | npm/PyPI publish | Adoption friction | ⬜ planned |

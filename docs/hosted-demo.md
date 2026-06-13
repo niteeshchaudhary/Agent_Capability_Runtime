@@ -1,6 +1,6 @@
 # Hosted demo (deploy your own playground)
 
-ACR does not ship a official public playground yet — deploy a minimal gateway in ~5 minutes.
+ACR does not ship a official public playground URL yet — deploy a minimal gateway + dashboard in ~5 minutes.
 
 ---
 
@@ -19,6 +19,7 @@ Try:
 
 ```bash
 curl -s http://localhost:3000/health
+open http://localhost:3000/dashboard/   # grant → execute → audit
 pnpm demo:http   # with GATEWAY_URL=http://localhost:3000
 ```
 
@@ -67,4 +68,4 @@ Add `"simulate": true` to execute body — returns `SIMULATE` without sending.
 
 ## Future: public sandbox
 
-A hosted UI (grant → execute → see DENY/ALLOW) is on the roadmap. Until then, `pnpm demo:wow` locally is the fastest experience.
+The **`/dashboard/`** UI is shipped with the gateway (grant → execute → audit → approve). A shared public sandbox URL is still optional ops — see [dashboard.md](./dashboard.md).

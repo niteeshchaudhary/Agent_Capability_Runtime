@@ -135,6 +135,44 @@ def test_cli_parses_upstream_after_double_dash() -> None:
     assert upstream == ["npx", "-y", "server-fs", "/data"]
 
 
+def test_cli_parses_http_transport_flags() -> None:
+    parser = _build_parser()
+    ns = parser.parse_args(
+        [
+            "--transport",
+            "streamable-http",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "9000",
+            "--policies",
+            "p.yaml",
+            "--",
+            "npx",
+            "server-fs",
+        ]
+    )
+    assert ns.transport == "streamable-http"
+    assert ns.host == "0.0.0.0"
+    assert ns.port == 9000
+
+
+def test_cli_parses_upstream_url() -> None:
+    parser = _build_parser()
+    ns = parser.parse_args(
+        [
+            "--transport",
+            "sse",
+            "--upstream-url",
+            "http://127.0.0.1:9000/sse",
+            "--upstream-transport",
+            "sse",
+        ]
+    )
+    assert ns.upstream_url == "http://127.0.0.1:9000/sse"
+    assert ns.upstream_transport == "sse"
+
+
 def test_cli_errors_without_upstream() -> None:
     with pytest.raises(SystemExit):
         main(["--policies", "p.yaml"])

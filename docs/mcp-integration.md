@@ -108,6 +108,22 @@ Runs an stdio MCP server in front of an upstream server: scanner-blocked tools
 are hidden from `tools/list`, and denied/poisoned calls return an error result
 to the agent. Point Claude Desktop / Cursor at `acr-mcp-proxy`.
 
+**HTTP/SSE downstream** — remote MCP clients connect over HTTP:
+
+```bash
+# SSE (GET /sse + POST /messages/)
+acr-mcp-proxy --transport sse --host 0.0.0.0 --port 8080 \
+    --policies policies/mcp-policies.yaml -- npx -y @modelcontextprotocol/server-filesystem /data
+
+# Streamable HTTP (POST /mcp)
+acr-mcp-proxy --transport streamable-http --port 8080 \
+    --policies policies/mcp-policies.yaml -- npx -y @modelcontextprotocol/server-filesystem /data
+```
+
+`GET /health` returns `{"status":"ok","service":"acr-mcp-proxy"}`.
+
+Chain an HTTP upstream with `--upstream-url` and `--upstream-transport sse|streamable-http`.
+
 ## TypeScript
 
 ```typescript
@@ -146,15 +162,16 @@ Matches enterprise **observe → enforce** patterns (StrongDM, AGT).
 | Pre-LLM scope | No | **QueryScopeGuard** (separate) |
 
 `AcrMcpProxy` provides the in-process **scan + enforce relay**, and
-`acr-mcp-proxy` runs it as a **standalone stdio server** in front of any upstream
-MCP server. An HTTP/SSE transport and multi-tenant UI are still on the roadmap.
+`acr-mcp-proxy` runs it as a standalone server over **stdio**, **SSE**, or
+**Streamable HTTP**. A multi-tenant admin UI is still on the roadmap.
 
 ## Roadmap
 
 - [x] MCP tool description scanner (poisoning detection) — `McpToolScanner`
 - [x] In-process scan + enforce proxy — `AcrMcpProxy`
 - [x] Standalone stdio proxy process — `acr-mcp-proxy`
-- [ ] HTTP/SSE proxy transport + multi-tenant UI
+- [x] HTTP/SSE + Streamable HTTP downstream — `--transport sse|streamable-http`
+- [ ] Multi-tenant admin UI
 - [ ] Go `McpToolGuard`
 
 ## Related

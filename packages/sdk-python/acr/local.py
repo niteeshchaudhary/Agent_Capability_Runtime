@@ -36,6 +36,7 @@ from urllib.parse import urlparse
 
 from acr._jwt import decode_hs256, encode_hs256
 from acr.client import AcrClient
+from acr.opa import build_opa_input, evaluate_opa, load_opa_config_from_env
 from acr.models import (
     ApprovalRequest,
     AuditEvent,
@@ -196,6 +197,7 @@ class LocalAcrClient:
         self._approvals: dict[str, dict[str, Any]] = {}
         self._audit: list[dict[str, Any]] = []
         self._audit_counter = 0
+        self._opa = load_opa_config_from_env()
 
     # ── Grant ────────────────────────────────────────────────────────────
 
@@ -282,6 +284,48 @@ class LocalAcrClient:
         conditions, violation = _evaluate_constraints(tool, constraints, payload, intent)
         if violation is not None:
             return self._deny(agent_id, tool, payload, violation, "policy_denied")
+
+        used = self._actions.get(jti, 0)
+        opa_input = build_opa_input(
+            agent_id=agent_id,
+            tool=tool,
+            payload=payload,
+            constraints=constraints,
+            action_count=used,
+            approval_granted=approval_id is not None,
+            simulate=bool(simulate),
+            jti=jti,
+            task=str(claims.get("task")) if claims.get("task") else None,
+        )
+        opa_allowed, opa_decision, opa_reason, _shadow = evaluate_opa(self._opa, opa_input)
+        if not opa_allowed:
+            if opa_decision == "REQUIRE_APPROVAL":
+                appr_id = f"appr_{uuid.uuid4().hex[:12]}"
+                self._approvals[appr_id] = {
+                    "id": appr_id,
+                    "agentId": agent_id,
+                    "tool": tool,
+                    "payload": payload,
+                    "status": "pending",
+                    "jti": jti,
+                    "createdAt": datetime.now(tz=timezone.utc).isoformat(),
+                    "reason": opa_reason or "OPA policy requires approval",
+                }
+                audit_id = self._record(
+                    agent_id, tool, "REQUIRE_APPROVAL", opa_reason, payload
+                )
+                return ExecuteApprovalRequired.model_validate({
+                    "auditId": audit_id,
+                    "reason": opa_reason or "OPA policy requires approval",
+                    "approvalId": appr_id,
+                })
+            return self._deny(
+                agent_id,
+                tool,
+                payload,
+                opa_reason or "denied by OPA policy",
+                "policy_denied",
+            )
 
         if simulate:
             audit_id = self._record(agent_id, tool, "SIMULATE", "policy would allow", payload)

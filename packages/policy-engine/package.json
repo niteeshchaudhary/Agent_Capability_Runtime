@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./opa": {
+      "types": "./dist/opa/index.d.ts",
+      "import": "./dist/opa/index.js"
     }
   },
   "files": ["dist"],

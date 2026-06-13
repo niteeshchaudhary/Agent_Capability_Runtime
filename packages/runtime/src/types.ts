@@ -15,6 +15,7 @@ import type { RevocationConfig } from "./revocation/types.js";
 import type { SandboxConfig } from "./sandbox/types.js";
 import type { ApprovalHook } from "./approval-store.js";
 import type { ExecutionPhase } from "./execution-state.js";
+import type { OpaBackendConfig } from "@acr/policy-engine";
 
 export interface RuntimeConfig {
   /** HS256 shared secret (default algorithm). Use `signing` for RS256 / EdDSA. */
@@ -37,6 +38,8 @@ export interface RuntimeConfig {
   revocation?: RevocationConfig;
   /** Adapter sandbox limits (timeout, SSRF guard, response cap). Default enabled. */
   sandbox?: SandboxConfig;
+  /** Optional OPA/Rego policy backend (HTTP server or local bundle). */
+  opa?: OpaBackendConfig;
 }
 
 export interface ExecuteInput {

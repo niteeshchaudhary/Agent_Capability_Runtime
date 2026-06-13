@@ -13,6 +13,7 @@
   "dependencies": {
     "@acr/adapters": "workspace:*",
     "@acr/capability-token": "workspace:*",
+    "@acr/policy-engine": "workspace:*",
     "@acr/runtime": "workspace:*",
     "@hono/node-server": "^1.14.1",
     "hono": "^4.7.4",

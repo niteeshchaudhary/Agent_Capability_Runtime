@@ -21,3 +21,19 @@ export type {
   UrlInPredicate,
 } from "./dsl/index.js";
 export type { ConstraintSet, ToolId } from "@acr/capability-token";
+export {
+  OpaPolicyBackend,
+  buildOpaInput,
+  buildOpaInputFromClaims,
+  loadOpaConfigFromEnv,
+  mergeOpaWithAstDecision,
+  parseOpaDecision,
+  queryOpaHttp,
+} from "./opa/index.js";
+export type {
+  OpaBackendConfig,
+  OpaDecision,
+  OpaEvaluationInput,
+  OpaEvaluationResult,
+  OpaMode,
+} from "./opa/index.js";

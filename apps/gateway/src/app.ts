@@ -9,12 +9,15 @@ import type { AgentCapabilityRuntime } from "@acr/runtime";
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireAdminAuth, type AdminAuthConfig } from "./admin-auth.js";
+import { mountDashboard } from "./dashboard-static.js";
 
 export const GATEWAY_VERSION = "0.1.0";
 
 export interface GatewayConfig {
   /** When non-empty, grant/delegate require admin Bearer token (RFC-0005) */
   adminAuth?: AdminAuthConfig;
+  /** Serve built dashboard at /dashboard/ (default true when dist exists) */
+  dashboard?: boolean;
 }
 
 const executeBodySchema = z.object({
@@ -381,6 +384,8 @@ export function createApp(runtime: AgentCapabilityRuntime, gatewayConfig?: Gatew
       return c.json({ error: "invalid_request", message }, 400);
     }
   });
+
+  mountDashboard(app, gatewayConfig?.dashboard !== false);
 
   return app;
 }

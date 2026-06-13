@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACR Dashboard</title>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Agent Capability Runtime</h1>
+        <div class="subtitle">Grant · Execute · Audit · Approve</div>
+      </div>
+      <div id="status" class="status">Connecting…</div>
+    </header>
+
+    <div class="layout">
+      <aside>
+        <label for="gateway-url">Gateway URL</label>
+        <input id="gateway-url" type="text" placeholder="http://localhost:3000 (empty = same origin)" />
+
+        <label for="admin-key">Admin API key (grant)</label>
+        <input id="admin-key" type="password" placeholder="Bearer token for /capabilities/grant" autocomplete="off" />
+
+        <button type="button" id="save-settings" class="secondary">Save &amp; connect</button>
+      </aside>
+
+      <div>
+        <nav>
+          <button type="button" class="tab active" data-tab="grant">Grant</button>
+          <button type="button" class="tab" data-tab="execute">Execute</button>
+          <button type="button" class="tab" data-tab="audit">Audit</button>
+          <button type="button" class="tab" data-tab="approvals">Approvals</button>
+        </nav>
+
+        <main>
+          <section class="panel" data-panel="grant">
+            <form id="grant-form">
+              <div class="grid-2">
+                <label class="field">Agent ID
+                  <input id="grant-agent" type="text" value="demo_agent" required />
+                </label>
+                <label class="field">Tool
+                  <select id="grant-tool"></select>
+                </label>
+              </div>
+              <label class="field">Constraints (JSON)
+                <textarea id="grant-constraints"></textarea>
+              </label>
+              <button type="submit">Grant capability</button>
+            </form>
+            <pre id="grant-output" class="output muted">Grant response appears here</pre>
+          </section>
+
+          <section class="panel" data-panel="execute" hidden>
+            <form id="exec-form">
+              <label class="field">Capability token
+                <textarea id="exec-token" required></textarea>
+              </label>
+              <div class="grid-2">
+                <label class="field">Tool
+                  <select id="exec-tool"></select>
+                </label>
+                <label class="field"><input id="exec-simulate" type="checkbox" /> Simulate only (no side effects)</label>
+              </div>
+              <label class="field">Payload (JSON)
+                <textarea id="exec-payload"></textarea>
+              </label>
+              <button type="submit">Execute</button>
+            </form>
+            <pre id="exec-output" class="output muted">Execute response appears here</pre>
+          </section>
+
+          <section class="panel" data-panel="audit" hidden>
+            <div class="toolbar">
+              <button type="button" id="refresh-audit" class="secondary">Refresh</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Decision</th>
+                  <th>Agent</th>
+                  <th>Tool</th>
+                  <th>Reason</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="audit-body"></tbody>
+            </table>
+          </section>
+
+          <section class="panel" data-panel="approvals" hidden>
+            <div class="toolbar">
+              <label>Status
+                <select id="approval-filter">
+                  <option value="pending">pending</option>
+                  <option value="">all</option>
+                  <option value="approved">approved</option>
+                  <option value="rejected">rejected</option>
+                </select>
+              </label>
+              <button type="button" id="refresh-approvals" class="secondary">Refresh</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Agent</th>
+                  <th>Tool</th>
+                  <th>Reason</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="approvals-body"></tbody>
+            </table>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

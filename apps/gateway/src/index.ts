@@ -8,6 +8,7 @@ import {
   resolveSigningConfig,
 } from "@acr/capability-token";
 import { createAgentCapabilityRuntime } from "@acr/runtime";
+import { loadOpaConfigFromEnv } from "@acr/policy-engine";
 import { parseAdminApiKeysFromEnv } from "./admin-auth.js";
 import { createApp, GATEWAY_VERSION } from "./app.js";
 
@@ -74,6 +75,7 @@ const runtime = await createAgentCapabilityRuntime({
   adapters: loadAdapterConfigFromEnv(),
   auditPath: process.env.ACR_AUDIT_PATH,
   approvalPath: process.env.ACR_APPROVAL_PATH,
+  opa: loadOpaConfigFromEnv(),
   consumption: {
     mode: consumptionMode ?? (process.env.ACR_REDIS_URL ? "redis" : "memory"),
     redisUrl: process.env.ACR_REDIS_URL,
@@ -103,15 +105,20 @@ if (adminApiKeys.length === 0) {
   );
 }
 
-const app = createApp(runtime, { adminAuth: { apiKeys: adminApiKeys } });
+const app = createApp(runtime, {
+  adminAuth: { apiKeys: adminApiKeys },
+  dashboard: process.env.ACR_DASHBOARD_ENABLED !== "false",
+});
 
 const consumptionLabel =
   consumptionMode === "redis" || process.env.ACR_REDIS_URL ? "redis" : "memory";
 const revocationLabel = revocationMode === "redis" ? "redis" : "memory";
 const sandboxEnabled = process.env.ACR_SANDBOX_ENABLED !== "false";
 const auditChainEnabled = process.env.ACR_AUDIT_CHAIN_ENABLED === "true";
+const opaEnabled = Boolean(process.env.ACR_OPA_URL || process.env.ACR_OPA_BUNDLE_PATH);
+const dashboardEnabled = process.env.ACR_DASHBOARD_ENABLED !== "false";
 console.log(
-  `ACR Gateway v${GATEWAY_VERSION} listening on http://localhost:${PORT} (signing: ${signing.algorithm}, consumption: ${consumptionLabel}, revocation: ${revocationLabel}, sandbox: ${sandboxEnabled ? "on" : "off"}, auditChain: ${auditChainEnabled ? "on" : "off"})`,
+  `ACR Gateway v${GATEWAY_VERSION} listening on http://localhost:${PORT} (signing: ${signing.algorithm}, consumption: ${consumptionLabel}, revocation: ${revocationLabel}, sandbox: ${sandboxEnabled ? "on" : "off"}, auditChain: ${auditChainEnabled ? "on" : "off"}, opa: ${opaEnabled ? process.env.ACR_OPA_MODE ?? "enforce" : "off"}, dashboard: ${dashboardEnabled ? "/dashboard/" : "off"})`,
 );
 
 serve({ fetch: app.fetch, port: PORT });

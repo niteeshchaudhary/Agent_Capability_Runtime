@@ -104,7 +104,8 @@ First failing check → `DENY` or `REQUIRE_APPROVAL`.
 - `spending_limit` with currency
 - `require_mfa` step-up
 - `data_classification` tags
-- OPA/Rego policy references
+
+External org policies: [OPA / Rego backend](./opa-rego-backend.md) (`ACR_OPA_*`).
 
 ## Package ownership
 

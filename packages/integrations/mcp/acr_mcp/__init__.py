@@ -11,6 +11,7 @@ from acr_mcp.scanner import (
     ToolScanReport,
 )
 from acr_mcp.server import GuardedUpstream, ProxyCallResult
+from acr_mcp.http_transport import HttpServerConfig, build_starlette_app, create_guarded_mcp_server
 
 __all__ = [
     "EnforceMode",
@@ -28,4 +29,7 @@ __all__ = [
     "ToolScanReport",
     "GuardedUpstream",
     "ProxyCallResult",
+    "HttpServerConfig",
+    "build_starlette_app",
+    "create_guarded_mcp_server",
 ]

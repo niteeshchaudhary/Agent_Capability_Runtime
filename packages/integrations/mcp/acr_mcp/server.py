@@ -5,15 +5,11 @@ advertised tools for poisoning, and enforces ACR capability policies on every
 ``tools/call`` before forwarding. Agents connect to *this* proxy instead of the
 raw server, so policy + scanning apply transparently.
 
-Two layers live here:
+Layers:
 
-* :class:`GuardedUpstream` — the transport-agnostic relay core. It wraps an
-  :class:`~acr_mcp.proxy.AcrMcpProxy` and an upstream session and returns
-  MCP-friendly results (refusals become tool errors rather than exceptions), so
-  it is fully unit-testable with a fake session.
-* :func:`run_stdio_proxy` / :func:`main` — a thin stdio server process that
-  wires :class:`GuardedUpstream` into the real ``mcp`` library. ``mcp`` is an
-  optional dependency (``pip install "acr-mcp[proxy]"``) imported lazily.
+* :class:`GuardedUpstream` — transport-agnostic relay core (unit-testable).
+* :func:`run_stdio_proxy` — stdio MCP server (default CLI mode).
+* :func:`run_http_proxy` — HTTP/SSE or Streamable HTTP server via uvicorn.
 """
 
 from __future__ import annotations
@@ -22,12 +18,17 @@ import argparse
 import asyncio
 import os
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from acr_mcp.guard import EnforceMode, McpToolDeniedError
 from acr_mcp.proxy import AcrMcpProxy, McpSessionLike, McpToolScanBlocked
 from acr_mcp.scanner import Severity, _extract_tool_fields
+
+UpstreamTransport = Literal["stdio", "sse", "streamable-http"]
+DownstreamTransport = Literal["stdio", "sse", "streamable-http"]
 
 
 @dataclass(frozen=True)
@@ -97,7 +98,81 @@ def _name_of(tool: Any) -> str:
     return name
 
 
-# ── stdio runner (requires the optional `mcp` dependency) ─────────────────────
+def _require_mcp() -> None:
+    try:
+        import mcp  # noqa: F401
+    except ImportError as exc:
+        raise SystemExit(
+            "The MCP proxy server needs the 'mcp' package. "
+            'Install it with: pip install "acr-mcp[proxy]"'
+        ) from exc
+
+
+def _log_scan_warnings(scan: Any) -> None:
+    if scan is not None and not scan.is_safe:
+        print(
+            f"[acr-mcp-proxy] scanner blocked tools: {', '.join(scan.blocked_tools)}",
+            file=sys.stderr,
+        )
+
+
+async def _build_relay(
+    session: McpSessionLike,
+    *,
+    policies_path: str | None,
+) -> GuardedUpstream:
+    proxy = AcrMcpProxy.from_policies(path=policies_path, block_threshold=Severity.HIGH)
+    relay = GuardedUpstream(proxy, session)
+    scan = await relay.initialize()
+    _log_scan_warnings(scan)
+    return relay
+
+
+@asynccontextmanager
+async def upstream_session(
+    *,
+    command: str | None = None,
+    args: list[str] | None = None,
+    url: str | None = None,
+    transport: UpstreamTransport = "stdio",
+) -> AsyncIterator[McpSessionLike]:
+    """Open a client session to an upstream MCP server."""
+    _require_mcp()
+    from mcp import ClientSession
+
+    if command:
+        from mcp import StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
+        params = StdioServerParameters(command=command, args=args or [])
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                yield session
+        return
+
+    if not url:
+        raise ValueError("upstream requires a command or --upstream-url")
+
+    if transport == "sse":
+        from mcp.client.sse import sse_client
+
+        async with sse_client(url) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                yield session
+        return
+
+    if transport == "streamable-http":
+        from mcp.client.streamable_http import streamable_http_client
+
+        async with streamable_http_client(url) as (read, write, _get_id):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                yield session
+        return
+
+    raise ValueError(f"unsupported upstream transport: {transport}")
 
 
 async def run_stdio_proxy(
@@ -108,61 +183,92 @@ async def run_stdio_proxy(
     server_name: str = "acr-mcp-proxy",
 ) -> None:
     """Run the proxy as an stdio MCP server in front of an upstream stdio server."""
-    try:
-        from mcp import ClientSession, StdioServerParameters, types
-        from mcp.client.stdio import stdio_client
-        from mcp.server import Server
-        from mcp.server.stdio import stdio_server
-    except ImportError as exc:  # pragma: no cover - exercised only without mcp
-        raise SystemExit(
-            "The MCP proxy server needs the 'mcp' package. "
-            'Install it with: pip install "acr-mcp[proxy]"'
-        ) from exc
+    _require_mcp()
+    from mcp.server import Server
+    from mcp.server.stdio import stdio_server
 
-    proxy = AcrMcpProxy.from_policies(path=policies_path, block_threshold=Severity.HIGH)
-    upstream_params = StdioServerParameters(command=upstream_command, args=upstream_args)
+    from acr_mcp.http_transport import create_guarded_mcp_server
 
-    async with stdio_client(upstream_params) as (read, write):
-        async with ClientSession(read, write) as upstream:
-            await upstream.initialize()
-            relay = GuardedUpstream(proxy, upstream)
-            scan = await relay.initialize()
-            if scan is not None and not scan.is_safe:
-                print(
-                    f"[acr-mcp-proxy] scanner blocked tools: {', '.join(scan.blocked_tools)}",
-                    file=sys.stderr,
-                )
+    async with upstream_session(command=upstream_command, args=upstream_args) as upstream:
+        relay = await _build_relay(upstream, policies_path=policies_path)
+        server = create_guarded_mcp_server(relay, name=server_name)
+        init_options = server.create_initialization_options()
+        async with stdio_server() as (srv_read, srv_write):
+            await server.run(srv_read, srv_write, init_options)
 
-            server: Server = Server(server_name)
 
-            @server.list_tools()
-            async def _list_tools() -> list[types.Tool]:  # type: ignore[name-defined]
-                return await relay.list_tools()
+async def run_http_proxy(
+    *,
+    host: str,
+    port: int,
+    transport: Literal["sse", "streamable-http"],
+    policies_path: str | None,
+    server_name: str = "acr-mcp-proxy",
+    upstream_command: str | None = None,
+    upstream_args: list[str] | None = None,
+    upstream_url: str | None = None,
+    upstream_transport: UpstreamTransport = "stdio",
+    sse_path: str = "/sse",
+    message_path: str = "/messages/",
+    streamable_http_path: str = "/mcp",
+) -> None:
+    """Run the proxy as an HTTP MCP server (SSE or Streamable HTTP)."""
+    from acr_mcp.http_transport import HttpServerConfig, create_guarded_mcp_server, serve_http
 
-            @server.call_tool()
-            async def _call_tool(name: str, arguments: dict[str, Any]) -> Any:  # type: ignore[name-defined]
-                result = await relay.call_tool(name, arguments)
-                if result.is_error:
-                    return [types.TextContent(type="text", text=result.content)]
-                raw = result.raw
-                if isinstance(raw, types.CallToolResult):
-                    return raw.content
-                return raw
+    config = HttpServerConfig(
+        host=host,
+        port=port,
+        transport=transport,
+        sse_path=sse_path,
+        message_path=message_path,
+        streamable_http_path=streamable_http_path,
+        server_name=server_name,
+    )
 
-            init_options = server.create_initialization_options()
-            async with stdio_server() as (srv_read, srv_write):
-                await server.run(srv_read, srv_write, init_options)
+    async with upstream_session(
+        command=upstream_command,
+        args=upstream_args,
+        url=upstream_url,
+        transport=upstream_transport if upstream_url else "stdio",
+    ) as upstream:
+        relay = await _build_relay(upstream, policies_path=policies_path)
+        server = create_guarded_mcp_server(relay, name=server_name)
+        print(
+            f"[acr-mcp-proxy] listening on http://{host}:{port} "
+            f"({transport}, upstream={upstream_transport or 'stdio'})",
+            file=sys.stderr,
+        )
+        await serve_http(server, config)
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="acr-mcp-proxy",
-        description="ACR-guarded MCP proxy: scan + enforce policy in front of an upstream MCP server.",
+        description=(
+            "ACR-guarded MCP proxy: scan + enforce policy in front of an upstream MCP server."
+        ),
+    )
+    parser.add_argument(
+        "--transport",
+        choices=("stdio", "sse", "streamable-http"),
+        default=os.environ.get("ACR_MCP_TRANSPORT", "stdio"),
+        help="Downstream transport exposed to MCP clients (default: stdio).",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("ACR_MCP_HOST", "127.0.0.1"),
+        help="HTTP listen host when --transport is sse or streamable-http.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("ACR_MCP_PORT", "8080")),
+        help="HTTP listen port when --transport is sse or streamable-http.",
     )
     parser.add_argument(
         "--policies",
         default=os.environ.get("ACR_MCP_POLICIES_PATH"),
-        help="Path to mcp-policies.yaml (default: $ACR_MCP_POLICIES_PATH or ./policies/mcp-policies.yaml).",
+        help="Path to mcp-policies.yaml.",
     )
     parser.add_argument(
         "--server-name",
@@ -170,9 +276,35 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Name advertised by the proxy MCP server.",
     )
     parser.add_argument(
+        "--upstream-url",
+        default=os.environ.get("ACR_MCP_UPSTREAM_URL"),
+        help="Upstream MCP server URL (SSE or Streamable HTTP). Omit to use stdio command.",
+    )
+    parser.add_argument(
+        "--upstream-transport",
+        choices=("sse", "streamable-http"),
+        default=os.environ.get("ACR_MCP_UPSTREAM_TRANSPORT", "sse"),
+        help="How to connect to --upstream-url (default: sse).",
+    )
+    parser.add_argument(
+        "--sse-path",
+        default="/sse",
+        help="SSE endpoint path when --transport sse.",
+    )
+    parser.add_argument(
+        "--message-path",
+        default="/messages/",
+        help="Client POST path when --transport sse.",
+    )
+    parser.add_argument(
+        "--mcp-path",
+        default="/mcp",
+        help="Endpoint path when --transport streamable-http.",
+    )
+    parser.add_argument(
         "upstream",
         nargs=argparse.REMAINDER,
-        help="Upstream MCP server command, e.g. -- npx -y @modelcontextprotocol/server-filesystem /data",
+        help="Upstream stdio command after --, e.g. npx -y @modelcontextprotocol/server-filesystem /data",
     )
     return parser
 
@@ -184,18 +316,78 @@ def main(argv: list[str] | None = None) -> int:
     upstream = list(ns.upstream)
     if upstream and upstream[0] == "--":
         upstream = upstream[1:]
-    if not upstream:
-        parser.error("missing upstream command (after --)")
+
+    upstream_command: str | None = upstream[0] if upstream else None
+    upstream_args: list[str] = upstream[1:] if len(upstream) > 1 else []
+
+    if ns.transport == "stdio":
+        if not upstream_command and not ns.upstream_url:
+            parser.error("stdio mode requires an upstream command (after --) or --upstream-url")
+        if ns.upstream_url:
+            asyncio.run(
+                run_stdio_proxy_via_url(
+                    upstream_url=ns.upstream_url,
+                    upstream_transport=ns.upstream_transport,
+                    policies_path=ns.policies,
+                    server_name=ns.server_name,
+                )
+            )
+        else:
+            asyncio.run(
+                run_stdio_proxy(
+                    upstream_command=upstream_command or "",
+                    upstream_args=upstream_args,
+                    policies_path=ns.policies,
+                    server_name=ns.server_name,
+                )
+            )
+        return 0
+
+    if not upstream_command and not ns.upstream_url:
+        parser.error("HTTP mode requires an upstream stdio command (after --) or --upstream-url")
 
     asyncio.run(
-        run_stdio_proxy(
-            upstream_command=upstream[0],
-            upstream_args=upstream[1:],
+        run_http_proxy(
+            host=ns.host,
+            port=ns.port,
+            transport=ns.transport,
             policies_path=ns.policies,
             server_name=ns.server_name,
+            upstream_command=upstream_command,
+            upstream_args=upstream_args or None,
+            upstream_url=ns.upstream_url,
+            upstream_transport=ns.upstream_transport,
+            sse_path=ns.sse_path,
+            message_path=ns.message_path,
+            streamable_http_path=ns.mcp_path,
         )
     )
     return 0
+
+
+async def run_stdio_proxy_via_url(
+    *,
+    upstream_url: str,
+    upstream_transport: UpstreamTransport,
+    policies_path: str | None,
+    server_name: str,
+) -> None:
+    """Stdio downstream with HTTP upstream — for remote upstream + local agent."""
+    _require_mcp()
+    from mcp.server import Server
+    from mcp.server.stdio import stdio_server
+
+    from acr_mcp.http_transport import create_guarded_mcp_server
+
+    async with upstream_session(
+        url=upstream_url,
+        transport=upstream_transport,
+    ) as upstream:
+        relay = await _build_relay(upstream, policies_path=policies_path)
+        server = create_guarded_mcp_server(relay, name=server_name)
+        init_options = server.create_initialization_options()
+        async with stdio_server() as (srv_read, srv_write):
+            await server.run(srv_read, srv_write, init_options)
 
 
 if __name__ == "__main__":  # pragma: no cover

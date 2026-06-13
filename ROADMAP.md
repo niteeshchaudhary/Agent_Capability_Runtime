@@ -12,15 +12,15 @@ ACR is actively maintained. RFCs are **Stable 1.0.0**; implementations are **0.1
 - [x] **MCP tool scanner** — `acr-mcp` poisoning / injection / typosquat detection
 - [x] **MCP proxy** — `AcrMcpProxy` scan-on-connect + enforce-on-call relay
 - [x] **MCP proxy server (stdio)** — `acr-mcp-proxy` standalone relay process
+- [x] **MCP proxy server (HTTP/SSE)** — SSE + Streamable HTTP downstream transports
+- [x] **OPA / Rego backend** — external policy bundles at execute (HTTP + local bundle)
+- [x] **Admin dashboard** — grant, execute, audit, approve at `/dashboard/`
 - [x] **Query scope guard** — pre-LLM topic filter (all SDKs)
 - [x] Self-hosted gateway + Docker (zero-config dev signing secret)
 - [x] Revocation, approvals, consumption/idempotency, sandbox, audit chain (gateway)
 
 ## Next
 
-- [ ] **MCP proxy server (HTTP/SSE)** — multi-tenant relay transport
-- [ ] **Hosted dashboard** — grant, execute, audit, approve in browser
-- [ ] **OPA / Rego** — external policy bundles
 - [ ] **Approval TTL** — separate from JWT `exp`
 - [ ] **HTTP redirect revalidation** — SSRF hardening
 - [ ] **OpenTelemetry** — grant / execute traces

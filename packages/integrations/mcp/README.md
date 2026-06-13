@@ -119,6 +119,35 @@ Point your MCP client (Claude Desktop, Cursor, …) at `acr-mcp-proxy` instead o
 the raw server. Scanner-blocked tools are hidden from `tools/list`; policy
 denials and poisoned calls return an error result to the agent.
 
+### HTTP/SSE downstream (remote agents)
+
+Expose the proxy over HTTP so remote MCP clients can connect without stdio:
+
+```bash
+# Legacy SSE transport (GET /sse + POST /messages/)
+acr-mcp-proxy --transport sse --host 0.0.0.0 --port 8080 \
+    --policies policies/mcp-policies.yaml -- \
+    npx -y @modelcontextprotocol/server-filesystem /data
+
+# Modern Streamable HTTP transport (POST /mcp)
+acr-mcp-proxy --transport streamable-http --port 8080 \
+    --policies policies/mcp-policies.yaml -- \
+    npx -y @modelcontextprotocol/server-filesystem /data
+```
+
+Health check: `GET http://127.0.0.1:8080/health`
+
+Connect an HTTP upstream instead of stdio:
+
+```bash
+acr-mcp-proxy --transport sse --port 8080 \
+    --upstream-url http://127.0.0.1:9000/sse --upstream-transport sse \
+    --policies policies/mcp-policies.yaml
+```
+
+Environment variables: `ACR_MCP_TRANSPORT`, `ACR_MCP_HOST`, `ACR_MCP_PORT`,
+`ACR_MCP_UPSTREAM_URL`, `ACR_MCP_UPSTREAM_TRANSPORT`.
+
 ## TypeScript
 
 Use the same policy shape with `@acr/sdk`:
