@@ -55,6 +55,70 @@ mode: shadow
 
 Policy is evaluated and audited, but the MCP call still runs — use for rollout (StrongDM-style **observe → enforce**).
 
+## Tool-poisoning scanner
+
+MCP servers advertise tools with free-text descriptions an agent reads into its
+prompt — a supply-chain risk. `McpToolScanner` statically inspects tool
+definitions for prompt injection, hidden/invisible unicode, secret-exfiltration
+hints, and **typosquatting** of trusted tool names.
+
+```python
+from acr_mcp import McpToolScanner, Severity
+
+scanner = McpToolScanner(trusted_tools=["read_file", "write_file"])
+report = scanner.scan_tools(tools)   # tools = list_tools() result
+
+if not report.is_safe:
+    print("Blocked:", report.blocked_tools)
+    for r in report.reports:
+        for f in r.findings:
+            print(r.tool_name, f.severity.value, f.code, "—", f.message)
+```
+
+| Detection | Example | Severity |
+|-----------|---------|----------|
+| Instruction injection | "ignore all previous instructions" | critical |
+| Conceal from user | "do not tell the user" | critical |
+| Invisible unicode | bidi/zero-width chars in description | high |
+| Hidden comment | `<!-- exfiltrate .env -->` | medium |
+| Exfiltration hint | `~/.ssh`, `.env`, `id_rsa` | high |
+| Typosquatting | `read_flie` ≈ `read_file` | high |
+
+## MCP proxy (scan + enforce relay)
+
+`AcrMcpProxy` wraps an upstream MCP session: it **scans** tools on connect and
+**enforces** the capability policy on every call — the "MCP proxy" pattern on
+top of ACR.
+
+```python
+from acr_mcp import AcrMcpProxy
+
+proxy = AcrMcpProxy.from_policies(path="policies/mcp-policies.yaml")
+
+await proxy.connect(session)              # list + scan upstream tools
+result = await proxy.call_tool(session, "read_file", {"path": "/safe.txt"})
+# raises McpToolScanBlocked if poisoned, McpToolDeniedError if policy denies
+```
+
+Any object exposing `list_tools()` / `call_tool(name, arguments)` works
+(`mcp.ClientSession` in production, a fake in tests).
+
+## Standalone proxy server
+
+Run the proxy as its own stdio MCP server in front of any upstream MCP server —
+agents connect to the proxy and policy + scanning apply transparently.
+
+```bash
+pip install -e "packages/integrations/mcp[proxy]"   # adds the `mcp` runtime
+
+acr-mcp-proxy --policies policies/mcp-policies.yaml -- \
+    npx -y @modelcontextprotocol/server-filesystem /data
+```
+
+Point your MCP client (Claude Desktop, Cursor, …) at `acr-mcp-proxy` instead of
+the raw server. Scanner-blocked tools are hidden from `tools/list`; policy
+denials and poisoned calls return an error result to the agent.
+
 ## TypeScript
 
 Use the same policy shape with `@acr/sdk`:

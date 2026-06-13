@@ -10,6 +10,8 @@ ACR can govern **Model Context Protocol (MCP)** tool calls — the main gap vs M
 | **Default deny** | Unlisted MCP tools blocked (`default_action: deny`) |
 | **Explicit deny** | `delete_file: { deny: true }` |
 | **Shadow mode** | Evaluate + audit without blocking (rollout) |
+| **Tool scanner** | Detect poisoning / injection / typosquatting in tool descriptions |
+| **Proxy relay** | `AcrMcpProxy` scans on connect + enforces on every call |
 | **Embedded or gateway** | Same as rest of ACR — zero infra or `ACR_GATEWAY_URL` |
 | **Capability model** | JWT limits, URL allowlists, approvals — not just RBAC |
 
@@ -64,6 +66,48 @@ tools:
 
 Example: [packages/integrations/mcp/examples/mcp-policies.yaml](../packages/integrations/mcp/examples/mcp-policies.yaml)
 
+### Tool-poisoning scanner
+
+```python
+from acr_mcp import McpToolScanner
+
+scanner = McpToolScanner(trusted_tools=["read_file", "write_file"])
+report = scanner.scan_tools(tools)        # output of session.list_tools()
+if not report.is_safe:
+    print("Blocked:", report.blocked_tools)
+```
+
+Catches instruction injection ("ignore previous instructions"), concealment
+("do not tell the user"), invisible/bidirectional unicode, hidden HTML comments,
+secret-exfiltration hints (`~/.ssh`, `.env`), and typosquatting of trusted names.
+
+### Proxy relay (scan + enforce)
+
+```python
+from acr_mcp import AcrMcpProxy
+
+proxy = AcrMcpProxy.from_policies(path="policies/mcp-policies.yaml")
+await proxy.connect(session)              # list + scan upstream tools
+await proxy.call_tool(session, "read_file", {"path": "/safe.txt"})
+```
+
+`AcrMcpProxy` raises `McpToolScanBlocked` for poisoned tools and
+`McpToolDeniedError` for policy violations, wrapping any `list_tools()` /
+`call_tool()` session (real `mcp.ClientSession` or a test fake).
+
+### Standalone proxy server
+
+```bash
+pip install -e "packages/integrations/mcp[proxy]"
+
+acr-mcp-proxy --policies policies/mcp-policies.yaml -- \
+    npx -y @modelcontextprotocol/server-filesystem /data
+```
+
+Runs an stdio MCP server in front of an upstream server: scanner-blocked tools
+are hidden from `tools/list`, and denied/poisoned calls return an error result
+to the agent. Point Claude Desktop / Cursor at `acr-mcp-proxy`.
+
 ## TypeScript
 
 ```typescript
@@ -101,12 +145,16 @@ Matches enterprise **observe → enforce** patterns (StrongDM, AGT).
 | Revoke mid-session | Kill switch | **Per `jti`** |
 | Pre-LLM scope | No | **QueryScopeGuard** (separate) |
 
-ACR does not yet replace a full MCP **proxy server** (stdio→HTTP, multi-tenant UI). This package is the **policy enforcement layer** you attach to any MCP client or proxy.
+`AcrMcpProxy` provides the in-process **scan + enforce relay**, and
+`acr-mcp-proxy` runs it as a **standalone stdio server** in front of any upstream
+MCP server. An HTTP/SSE transport and multi-tenant UI are still on the roadmap.
 
 ## Roadmap
 
-- [ ] Standalone MCP proxy binary (stdio/HTTP relay)
-- [ ] MCP tool description scanner (poisoning detection)
+- [x] MCP tool description scanner (poisoning detection) — `McpToolScanner`
+- [x] In-process scan + enforce proxy — `AcrMcpProxy`
+- [x] Standalone stdio proxy process — `acr-mcp-proxy`
+- [ ] HTTP/SSE proxy transport + multi-tenant UI
 - [ ] Go `McpToolGuard`
 
 ## Related

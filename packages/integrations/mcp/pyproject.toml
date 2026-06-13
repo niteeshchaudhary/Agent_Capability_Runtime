@@ -26,12 +26,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+proxy = [
+    "mcp>=1.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+
+[project.scripts]
+acr-mcp-proxy = "acr_mcp.server:main"
 
 [project.urls]
 Homepage = "https://github.com/agent-capability-runtime/Agent_Capability_Runtime"

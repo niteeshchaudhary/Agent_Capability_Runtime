@@ -9,14 +9,16 @@ ACR is actively maintained. RFCs are **Stable 1.0.0**; implementations are **0.1
 - [x] Go `acr-sdk-go` — HTTP client + `Can()` DSL
 - [x] LangChain **`protect()`** — one-call tool wrapping
 - [x] **MCP tool guard** — `acr-mcp` policy at MCP boundary + shadow mode
+- [x] **MCP tool scanner** — `acr-mcp` poisoning / injection / typosquat detection
+- [x] **MCP proxy** — `AcrMcpProxy` scan-on-connect + enforce-on-call relay
+- [x] **MCP proxy server (stdio)** — `acr-mcp-proxy` standalone relay process
 - [x] **Query scope guard** — pre-LLM topic filter (all SDKs)
 - [x] Self-hosted gateway + Docker (zero-config dev signing secret)
 - [x] Revocation, approvals, consumption/idempotency, sandbox, audit chain (gateway)
 
 ## Next
 
-- [ ] **MCP proxy server** — stdio/HTTP relay with built-in guard
-- [ ] **MCP tool description scanner** — poisoning / typosquat detection
+- [ ] **MCP proxy server (HTTP/SSE)** — multi-tenant relay transport
 - [ ] **Hosted dashboard** — grant, execute, audit, approve in browser
 - [ ] **OPA / Rego** — external policy bundles
 - [ ] **Approval TTL** — separate from JWT `exp`

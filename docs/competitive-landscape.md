@@ -179,15 +179,15 @@ User query
 
 Aligned with [ROADMAP](../ROADMAP.md):
 
-| Priority | Item | Closes gap with |
-|----------|------|-----------------|
-| **P0** | MCP proxy server | Sentinel, AgentWard, AGT |
-| **P0** | OPA/Rego backend | AGT, StrongDM/Cedar shops |
-| **P1** | Admin dashboard | AGT, MCP gateways |
-| **P1** | OpenTelemetry | Enterprise ops |
-| **P2** | MCP tool scanner | AgentWard, AGT |
-| **P2** | npm/PyPI publish | Adoption friction |
-| **P3** | Agent identity / trust | AGT AgentMesh |
+| Priority | Item | Closes gap with | Status |
+|----------|------|-----------------|--------|
+| **P0** | MCP proxy server | Sentinel, AgentWard, AGT | ✅ `acr-mcp-proxy` stdio process shipped; HTTP/SSE next |
+| **P0** | OPA/Rego backend | AGT, StrongDM/Cedar shops | ⬜ planned |
+| **P1** | Admin dashboard | AGT, MCP gateways | ⬜ planned |
+| **P1** | OpenTelemetry | Enterprise ops | ⬜ planned |
+| **P2** | MCP tool scanner | AgentWard, AGT | ✅ `McpToolScanner` shipped |
+| **P2** | npm/PyPI publish | Adoption friction | ⬜ planned |
+| **P3** | Agent identity / trust | AGT AgentMesh | ⬜ planned |
 
 ---
 
